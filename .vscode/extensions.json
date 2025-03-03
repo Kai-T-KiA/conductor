@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-azuretools.vscode-docker",
+    "rebornix.ruby",
+    "castwide.solargraph",
+    "kaiwood.endwise",
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-rename-tag"
+  ]
+}
