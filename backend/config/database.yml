@@ -19,4 +19,4 @@ production:
   database: conductor_production
   username: <%= ENV["DATABASE_USERNAME"] %>
   password: <%= ENV["DATABASE_PASSWORD"] %>
-  url: <%= ENV["DATABASE_URL"] %>
+  url: <%= ENV["postgresql://postgres:conductorgM163321@db.qkovjqdrixvhmhfnyepj.supabase.co:5432/postgres"] %>
