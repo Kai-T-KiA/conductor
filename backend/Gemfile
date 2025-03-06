@@ -24,7 +24,7 @@ gem "puma", ">= 5.0"
 # gem "bcrypt", "~> 3.1.7"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ windows jruby ]
+gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -37,7 +37,7 @@ gem "bootsnap", require: false
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri windows ]
+  gem "debug", platforms: %i[ mri mingw mswin x64_mingw ]
 end
 
 group :development do
@@ -55,6 +55,7 @@ gem 'devise-jwt'
 gem 'cancancan'
 
 # API
+# Cross-Origin Resource Sharing(CORS)の設定を容易にする
 gem 'rack-cors'
 gem 'active_model_serializers'
 
@@ -82,3 +83,9 @@ group :development do
   gem 'rubocop-rails', require: false
   gem 'brakeman', require: false
 end
+
+# ログイン機能
+# JSON Web Token(JWT)を生成・検証
+gem 'jwt'
+# パスワードのハッシュ化と検証を行うgem
+gem 'bcrypt'
