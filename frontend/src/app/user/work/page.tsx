@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react';
 import Head from 'next/head';
-// import Sidebar from '../../components/Sidebar'; // サイドバーコンポーネント
-// import Header from '../../components/Header'; // ヘッダーコンポーネント
 import WorkingSummary from '../../components/WorkingSummary';
 import TimeReporting from '../../components/TimeReporting';
 import WorkingHoursChart from '../../components/WorkingHoursChart';
@@ -38,7 +36,6 @@ export default function UserWorkPage() {
             </div>
           </div>
           {/* コンテンツグリッド */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-2"> */}
           <div className="flex">
             {/* 左側カラム */}
             <div className="space-y-6 w-[40%] mr-[70px]">
