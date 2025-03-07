@@ -23,7 +23,7 @@ export default function UserHomePage() {
       <div className='grid grid-cols-2 gap-8 text-black h-full'  style={{ backgroundColor: '#F5EFFA' }}>
         {/* 稼働状況 */}
         <div className='h-full'>
-          <h2 className='text-[36px] font-semibold mb-4'>稼働状況</h2>
+          <h2 className='text-4xl font-semibold mb-4'>稼働状況</h2>
           <div className='bg-white rounded-lg p-6 shadow-sm'>
             <HomeCalendar />
           </div>
@@ -32,7 +32,7 @@ export default function UserHomePage() {
         {/* タスク状況 */}
         <div>
           <div className='flex justify-between items-center mb-4'>
-            <h2 className='text-[36px] font-semibold'>タスク状況</h2>
+            <h2 className='text-4xl font-semibold'>タスク状況</h2>
           </div>
 
           <div className='bg-white rounded-lg p-6 shadow-sm'>

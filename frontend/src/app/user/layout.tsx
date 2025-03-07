@@ -59,11 +59,11 @@ export default function UserLayout({
   }
 
   return (
-    <div className='flex min-h-screen text-black'>
+    <div className='flex min-h-screen text-black' style={{ backgroundColor: '#F5EFFA' }}>
       <Sidebar userData={userData} />
       <div className='flex-1 flex flex-col'>
         <Header userId={userData.id} />
-        <main className='flex-1 pl-[50px] pr-[30px] pt-[20px]' style={{ backgroundColor: '#F5EFFA' }}>
+        <main className='flex-1 pl-[50px] pr-[30px] h-[80%]' style={{ backgroundColor: '#F5EFFA' }}>
           {children}
         </main>
       </div>
