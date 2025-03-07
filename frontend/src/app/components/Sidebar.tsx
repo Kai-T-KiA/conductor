@@ -51,13 +51,13 @@ export default function Sidebar({ userData }: SidebarProps) {
         稼働状況
       </Link>
       <Link
-        href="/user/tasks"
+        href="/user/task"
         className={`py-4 text-center text-[24px] ${isActive('/user/tasks') ? 'bg-indigo-200' : ''}`}
       >
         タスク
       </Link>
       <Link
-        href="/user/reports"
+        href="/user/reward"
         className={`py-4 text-center text-[24px] ${isActive('/user/reports') ? 'bg-indigo-200' : ''}`}
       >
         報酬
