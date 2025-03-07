@@ -20,8 +20,8 @@ export default function Sidebar({ userData }: SidebarProps) {
   };
 
   return (
-    <div className="w-[168px] text-center flex flex-col h-screen" style={{ backgroundColor: '#C8C5DC' }}>
-      <div className="py-6 border-b border-indigo-200">
+    <div className="w-[168px] text-center flex flex-col min-h-screen " style={{ backgroundColor: '#C8C5DC' }}>
+      <div className="py-6 border-indigo-200">
         <Image
           src='/conductor-logo.png'
           alt='アプリロゴ'

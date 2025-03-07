@@ -8,7 +8,7 @@ type HeaderProps = {
 
 export default function Header({ userId }: HeaderProps) {
   return (
-    <div className="flex justify-between items-center p-4 h-[106px]" style={{ backgroundColor: '#F5EFFA' }}>
+    <div className="flex justify-between items-center p-4 h-[106px] mb-[20px]" style={{ backgroundColor: '#F5EFFA' }}>
       <div className="flex items-center ml-[10px]">
         <button
           className="flex items-center px-4 py-2 rounded-full transition-all duration-200 bg-green-50 hover:bg-green-100 cursor-pointer"
