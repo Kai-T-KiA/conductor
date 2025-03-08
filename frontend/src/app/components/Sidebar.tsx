@@ -52,13 +52,13 @@ export default function Sidebar({ userData }: SidebarProps) {
       </Link>
       <Link
         href="/user/task"
-        className={`py-4 text-center text-[24px] ${isActive('/user/tasks') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[24px] ${isActive('/user/task') ? 'bg-indigo-200' : ''}`}
       >
         タスク
       </Link>
       <Link
         href="/user/reward"
-        className={`py-4 text-center text-[24px] ${isActive('/user/reports') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[24px] ${isActive('/user/reward') ? 'bg-indigo-200' : ''}`}
       >
         報酬
       </Link>
