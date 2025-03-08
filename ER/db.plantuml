@@ -1,0 +1,116 @@
+@startuml freelance-management-system
+
+' ER図スタイルを使用
+!define table(x) entity x << (T,#FFAAAA) >>
+!define primary_key(x) <u>x</u>
+!define foreign_key(x) #x
+
+' テーブルの定義
+table(users) {
+  primary_key(user_id): INT ' ユーザーID
+  name: VARCHAR ' 名前
+  email: VARCHAR ' メールアドレス
+  encrypted_password: VARCHAR
+  reset_password_token: VARCHAR
+  reset_password_sent_at: timestamp
+  remember_created_at: timestamp
+  role: INT ' ロール
+  created_at: timestamp
+  updated_at: timestamp
+  jti: varchar
+  hourly_rate: DECIMAL  ' 時間単価
+}
+
+table(clients) {
+  primary_key(client_id): INT ' クライアントID
+  name: VARCHAR ' クライアント名/企業名
+  contact_person: VARCHAR ' 担当者名
+  email: VARCHAR ' 連絡先メール
+  phone: VARCHAR ' 電話番号
+  address: TEXT ' 住所
+  notes: TEXT ' 備考
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+table(projects) {
+  primary_key(project_id): INT ' プロジェクトID
+  foreign_key(client_id): INT ' クライアントID
+  name: VARCHAR ' プロジェクト名
+  description: TEXT ' プロジェクト説明
+  start_date: DATE ' 開始日
+  end_date: DATE ' 終了予定日
+  status: VARCHAR ' ステータス
+  budget: DECIMAL ' 予算
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+table(tasks) {
+  primary_key(task_id): INT ' タスクID
+  foreign_key(user_id): INT ' ユーザーID
+  foreign_key(project_id): INT ' プロジェクトID
+  title: VARCHAR ' タスク名
+  description: TEXT ' タスク説明
+  start_date: DATE ' 開始日
+  due_date: DATE ' 期限日
+  status: VARCHAR ' ステータス
+  priority: VARCHAR ' 優先度
+  estimated_hours: DECIMAL ' 推定稼働時間
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+table(work_hours) {
+  primary_key(work_hours_id): INT ' 稼働時間ID
+  foreign_key(user_id): INT ' ユーザーID
+  foreign_key(task_id): INT ' タスクID
+  work_date: DATE ' 勤務日
+  start_time: TIME ' 開始時間
+  end_time: TIME ' 終了時間
+  hours_worked: DECIMAL ' 稼働時間
+  activity_description: TEXT ' 作業内容
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+table(monthly_payments) {
+  primary_key(payment_id): INT ' 支払いID
+  foreign_key(user_id): INT ' ユーザーID
+  foreign_key(client_id): INT ' クライアントID
+  year_month: DATE ' 年月
+  total_amount: DECIMAL ' 合計金額
+  currency: VARCHAR ' 通貨
+  payment_date: DATE ' 支払日
+  payment_status: VARCHAR ' 支払状況
+  payment_method: VARCHAR ' 支払方法
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+table(invoice_items) {
+  primary_key(item_id): INT ' 明細ID
+  foreign_key(payment_id): INT ' 支払いID
+  description: TEXT ' 明細説明
+  amount: DECIMAL ' 金額
+  quantity: DECIMAL ' 数量
+  unit_price: DECIMAL ' 単価
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+' リレーションシップの定義
+users ||--o{ tasks : "担当する"
+users ||--o{ work_hours : "記録する"
+users ||--o{ monthly_payments : "受け取る"
+
+clients ||--o{ projects : "持つ"
+clients ||--o{ monthly_payments : "支払う"
+
+projects ||--o{ tasks : "含む"
+
+tasks ||--o{ work_hours : "記録される"
+
+monthly_payments ||--o{ invoice_items : "含む"
+
+@enduml
