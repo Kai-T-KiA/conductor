@@ -65,13 +65,13 @@ const LoginForm = () => {
       setSuccessMessage(data.status.message || 'ログインしました');
 
       // ユーザータイプに応じてリダイレクト（このあと実装）
-      // setTimeout(() => {
-      //   if (data.user_type === 'admin') {
-      //     router.push('/admin/dashboard');
-      //   } else {
-      //     router.push('/dashboard');
-      //   }
-      // }, 2000);
+      setTimeout(() => {
+        if (data.user_type === 'admin') {
+          router.push('/admin/home');
+        } else {
+          router.push('/user/home');
+        }
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'ログインに失敗しました。再度お試しください。');
     } finally {
