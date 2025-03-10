@@ -45,8 +45,8 @@ export default function Sidebar({ userData }: SidebarProps) {
         ホーム
       </Link>
       <Link
-        href="/admin/work"
-        className={`py-4 text-center text-[24px] ${isActive('/admin/work') ? 'bg-indigo-200' : ''}`}
+        href="/admin/users"
+        className={`py-4 text-center text-[24px] ${isActive('/admin/users') ? 'bg-indigo-200' : ''}`}
       >
         ユーザー管理
       </Link>
