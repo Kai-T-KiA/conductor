@@ -124,11 +124,11 @@ export default function TaskDashboard() {
               </div>
             </div>
 
-            {/* 期限遅い */}
+            {/* 期限近い */}
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">期限遅い</h3>
+                  <h3 className="text-sm font-medium text-gray-500">期限近い</h3>
                   <p className="text-2xl font-bold">{reviewCount}</p>
                 </div>
                 <div className="w-12 h-12">
