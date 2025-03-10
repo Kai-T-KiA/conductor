@@ -23,58 +23,73 @@ const LoginForm = () => {
     setError('');
     setIsLoading(true);
 
-    // あとで使う箇所があるかもリダイレクトなど
-    // try {
-    //   // API呼び出しを実装（バックエンド連携時に実装）
-    //   await new Promise(resolve => setTimeout(resolve, 1000));
-
-    //   // ログイン成功後のリダイレクト
-    //   router.push('/dashboard');
-    // } catch (err: any) {
-    //   setError(err.message || 'ログインに失敗しました。再度お試しください。');
-    // } finally {
-    //   setIsLoading(false);
-    // }
-
     try {
-      // 本番環境へのデプロイ時は変更が必要
+      // パスワードの基本バリデーション
+      if (!password || password.length < 6) {
+        throw new Error('パスワードは6文字以上で入力してください');
+      }
+
+      // APIエンドポイントにPOSTリクエストを送信
+      // 本番環境へのデプロイ時はURLを変更する必要がある
       const response = await fetch('http://localhost:3001/api/v1/login', {
-        method: 'POST',
+        method: 'POST',  // HTTPメソッドの指定
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json',  // JSONデータを送信することを指定
         },
         body: JSON.stringify({
+          // Railsのdeviseで期待される形式でユーザー認証情報をネスト
           user: {
-            email,
-            password
+            email,      // フォームから取得したメールアドレス
+            password    // フォームから取得したパスワード
           }
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.status?.message || 'ログインに失敗しました')
+      // ステータスコードに基づいた処理
+      if (response.status === 401) {
+        // 認証失敗（401 Unauthorized）
+        const errorData = await response.json();
+        throw new Error(errorData.status?.message || 'パスワード認証に失敗しました')
+      } else if (!response.ok) {
+        // その他のエラー
+        const errorData = await response.json();
+        throw new Error(errorData.status?.message || 'ログイン処理中にエラーが発生しました')
       }
 
-      // JWTトークンをlocalStorageに保存
-      localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user_type', data.data.user_type); // ユーザータイプ（user/admin）を保存
+      // レスポンスをJSON形式でパース
+      const data = await response.json();
 
-      // ログイン成功メッセージを表示
+      // 認証成功時の処理
+      // JWTトークンをlocalStorageに保存（ブラウザを閉じても保持される）
+      localStorage.setItem('token', data.data.token);
+      // ユーザータイプ（一般ユーザー:0、管理者:1）を保存
+      localStorage.setItem('user_type', data.data.user_type);
+
+      // ユーザーにログイン成功を通知するためのメッセージを設定
+      // APIからのメッセージがあればそれを使用、なければデフォルトメッセージ
       setSuccessMessage(data.status.message || 'ログインしました');
 
-      // ユーザータイプに応じてリダイレクト（このあと実装）
+      // ユーザーを適切なダッシュボードにリダイレクト
+      // 0.2秒間の遅延を設けてユーザーに成功メッセージを見せる
       setTimeout(() => {
-        if (data.user_type === 'admin') {
-          router.push('/admin/home');
-        } else {
-          router.push('/user/home');
+        // ユーザータイプに基づいて適切なページにリダイレクト
+        if (data.data.user_type === 1) {  // 管理者(1)の場合
+          router.push('/admin/home');      // 管理者ダッシュボードへ
+        } else {                           // 一般ユーザー(0)の場合
+          router.push('/user/home');       // ユーザーダッシュボードへ
         }
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'ログインに失敗しました。再度お試しください。');
+      }, 200); // 0.2秒の遅延
+
+    } catch (error) {
+      // エラー処理
+      // エラーメッセージをUIに表示（APIからのエラーまたはデフォルトメッセージ）
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('ログインに失敗しました。再度お試しください')
+      }
     } finally {
+      // 処理完了後（成功/失敗問わず）にローディング状態を解除
       setIsLoading(false);
     }
   };
