@@ -89,3 +89,5 @@ end
 gem 'jwt'
 # パスワードのハッシュ化と検証を行うgem
 gem 'bcrypt'
+
+gem 'jsonapi-serializer'

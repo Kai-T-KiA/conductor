@@ -9,13 +9,13 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
     # origins 'localhost:3000', 'your-production-frontend-domain.com'
     # 開発環境用
-    origins 'http://localhost:3000'
+    origins ENV['CORS_ORIGINS'] || 'http://localhost:3000'
     # ワイルドカードは良くないみたい
     # origins '*'
     resource '*',
       headers: :any,
       methods: [:get, :post, :put, :patch, :delete, :options, :head],
-      expose: ['Authorization'], # 追加行
+      expose: ['Authorization'], # Authorization ヘッダーを公開（認証トークンのため）
       credentials: true
   end
 end
