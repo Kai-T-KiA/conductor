@@ -30,9 +30,11 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     }
   }
 
-  // リクエスト設定
-  const config = {
+  // リクエスト設定(特定の値のみを許可するRequestCredentials型を設定)
+  const config:RequestInit = {
     ...options,
+    // クロスオリジンリクエスト（異なるドメイン間のリクエスト）でCookieなどの認証情報を送信するかどうかを指定するオプション
+    credentials: 'include',
     headers,
   };
 
