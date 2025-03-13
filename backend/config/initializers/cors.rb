@@ -8,7 +8,8 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
     # 開発環境用
-    origins ENV['CORS_ORIGINS'] || 'http://localhost:3000'
+    # origins ENV['CORS_ORIGINS'] || 'http://localhost:3000'
+    origins 'https://conductor-rho.vercel.app'
     # ワイルドカードは良くないみたい
     # origins '*'
     resource '*',
