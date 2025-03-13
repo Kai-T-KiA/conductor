@@ -2,18 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-// import Link from 'next/link';
-// Next.jsのImageコンポーネントをインポート
 import Image from 'next/image';
+import { login } from '../../utils/api';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // メッセージ表示のための一時的な追加
   const [successMessage, setSuccessMessage] = useState('');
-  // 開発中メッセージのための状態
   const [devMessage, setDevMessage] = useState('');
   const router = useRouter();
 
@@ -29,67 +26,33 @@ const LoginForm = () => {
         throw new Error('パスワードは6文字以上で入力してください');
       }
 
-      // APIエンドポイントにPOSTリクエストを送信
-      // 本番環境へのデプロイ時はURLを変更する必要がある
-      const response = await fetch('http://localhost:3001/api/v1/login', {
-        method: 'POST',  // HTTPメソッドの指定
-        headers: {
-          'Content-Type': 'application/json',  // JSONデータを送信することを指定
-        },
-        body: JSON.stringify({
-          // Railsのdeviseで期待される形式でユーザー認証情報をネスト
-          user: {
-            email,      // フォームから取得したメールアドレス
-            password    // フォームから取得したパスワード
-          }
-        }),
-      });
-
-      // ステータスコードに基づいた処理
-      if (response.status === 401) {
-        // 認証失敗（401 Unauthorized）
-        const errorData = await response.json();
-        throw new Error(errorData.status?.message || 'パスワード認証に失敗しました')
-      } else if (!response.ok) {
-        // その他のエラー
-        const errorData = await response.json();
-        throw new Error(errorData.status?.message || 'ログイン処理中にエラーが発生しました')
-      }
-
-      // レスポンスをJSON形式でパース
-      const data = await response.json();
+      // 集約されたAPI関数を使用してログイン
+      const data = await login(email, password);
 
       // 認証成功時の処理
-      // JWTトークンをlocalStorageに保存（ブラウザを閉じても保持される）
       localStorage.setItem('token', data.data.token);
-      // ユーザータイプ（一般ユーザー:0、管理者:1）を保存
       localStorage.setItem('user_type', data.data.user_type);
 
-      // ユーザーにログイン成功を通知するためのメッセージを設定
-      // APIからのメッセージがあればそれを使用、なければデフォルトメッセージ
+      // ユーザーにログイン成功を通知
       setSuccessMessage(data.status.message || 'ログインしました');
 
-      // ユーザーを適切なダッシュボードにリダイレクト
-      // 0.2秒間の遅延を設けてユーザーに成功メッセージを見せる
+      // 適切なダッシュボードにリダイレクト
       setTimeout(() => {
-        // ユーザータイプに基づいて適切なページにリダイレクト
-        if (data.data.user_type === 1) {  // 管理者(1)の場合
-          router.push('/admin/home');      // 管理者ダッシュボードへ
-        } else {                           // 一般ユーザー(0)の場合
-          router.push('/user/home');       // ユーザーダッシュボードへ
+        if (data.data.user_type === 1) {
+          router.push('/admin/home');
+        } else {
+          router.push('/user/home');
         }
-      }, 200); // 0.2秒の遅延
+      }, 200);
 
     } catch (error) {
       // エラー処理
-      // エラーメッセージをUIに表示（APIからのエラーまたはデフォルトメッセージ）
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('ログインに失敗しました。再度お試しください')
+        setError('ログインに失敗しました。再度お試しください');
       }
     } finally {
-      // 処理完了後（成功/失敗問わず）にローディング状態を解除
       setIsLoading(false);
     }
   };
@@ -98,7 +61,6 @@ const LoginForm = () => {
   const handleRegister = (e: React.MouseEvent) => {
     e.preventDefault();
     setDevMessage('新規登録機能は現在開発中です');
-    // 他のメッセージをクリア
     setSuccessMessage('');
     setError('');
   };
@@ -106,7 +68,6 @@ const LoginForm = () => {
   // Googleログインの仮実装
   const handleGoogleLogin = () => {
     setDevMessage('Googleログイン機能は現在開発中です');
-    // 他のメッセージをクリア
     setSuccessMessage('');
     setError('');
   };
@@ -135,7 +96,6 @@ const LoginForm = () => {
                 name='email'
                 type='email'
                 autoComplete='email'
-                // required
                 className='appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text:sm text-gray-900'
                 placeholder='xxxxxx@gmail.com'
                 value={email}
@@ -150,7 +110,6 @@ const LoginForm = () => {
                 name='password'
                 type='password'
                 autoComplete='current-password'
-                // required
                 className='appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900'
                 placeholder='aaaaaaa'
                 value={password}
@@ -160,7 +119,6 @@ const LoginForm = () => {
           </div>
 
           {/* 開発中メッセージ表示 */}
-          {/* 一時的に追加 */}
           {devMessage && (
             <div className='rounded-md bg-yellow-50 p-4'>
               <div className='text-sm text-yellow-700'>{devMessage}</div>
