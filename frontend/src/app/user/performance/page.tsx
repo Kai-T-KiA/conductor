@@ -83,7 +83,10 @@ export default function PerformancePage() {
       </div>
 
       {/* Conductor AI分析 */}
-      <div className="bg-purple-500 text-white p-6 rounded-lg shadow-sm mb-6">
+      <div
+        className="p-6 rounded-lg shadow-sm mb-6 text-white"
+        style={{ background: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' }}
+      >
         <h2 className="text-xl font-bold mb-4">Conductor AI 分析</h2>
 
         <div className="mb-6 p-3 rounded" style={{ backgroundColor: 'rgb(217, 217, 217, 0.2)'}}>
