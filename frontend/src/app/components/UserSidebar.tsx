@@ -40,31 +40,31 @@ export default function UserSidebar({ userData }: SidebarProps) {
 
       <Link
         href="/user/home"
-        className={`py-4 text-center text-[20px] ${isActive('/user/home') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/user/home') ? 'bg-indigo-200' : ''}`}
       >
         ホーム
       </Link>
       <Link
         href="/user/work"
-        className={`py-4 text-center text-[20px] ${isActive('/user/work') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/user/work') ? 'bg-indigo-200' : ''}`}
       >
         稼働状況
       </Link>
       <Link
         href="/user/task"
-        className={`py-4 text-center text-[20px] ${isActive('/user/task') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/user/task') ? 'bg-indigo-200' : ''}`}
       >
         タスク
       </Link>
       <Link
         href="/user/reward"
-        className={`py-4 text-center text-[20px] ${isActive('/user/reward') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/user/reward') ? 'bg-indigo-200' : ''}`}
       >
         報酬
       </Link>
       <Link
         href="/user/performance"
-        className={`py-4 text-center text-[20px] ${isActive('/user/performance') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/user/performance') ? 'bg-indigo-200' : ''}`}
       >
         パフォーマンス
       </Link>

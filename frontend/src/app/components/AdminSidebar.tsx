@@ -40,27 +40,33 @@ export default function Sidebar({ userData }: SidebarProps) {
 
       <Link
         href="/admin/home"
-        className={`py-4 text-center text-[24px] ${isActive('/admin/home') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/admin/home') ? 'bg-indigo-200' : ''}`}
       >
         ホーム
       </Link>
       <Link
         href="/admin/users"
-        className={`py-4 text-center text-[24px] ${isActive('/admin/users') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/admin/users') ? 'bg-indigo-200' : ''}`}
       >
         ユーザー管理
       </Link>
       <Link
         href="/admin/task"
-        className={`py-4 text-center text-[24px] ${isActive('/admin/task') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/admin/task') ? 'bg-indigo-200' : ''}`}
       >
         タスク管理
       </Link>
       <Link
         href="/admin/reward"
-        className={`py-4 text-center text-[24px] ${isActive('/admin/reward') ? 'bg-indigo-200' : ''}`}
+        className={`py-4 text-center text-[18px] ${isActive('/admin/reward') ? 'bg-indigo-200' : ''}`}
       >
         報酬管理
+      </Link>
+      <Link
+        href="/admin/performance"
+        className={`py-4 text-center text-[18px] ${isActive('/admin/performance') ? 'bg-indigo-200' : ''}`}
+      >
+        パフォーマンス管理
       </Link>
     </div>
   );
