@@ -1,6 +1,6 @@
 'use client';
 
-import Sidebar from '../components/AdminSidebar';
+import AdminSidebar from '../components/AdminSidebar';
 import Header from '../components/Header';
 import { withAuthLayout } from '../auth/AuthLayout';
 
@@ -14,7 +14,7 @@ function AdminLayoutBase({
 }) {
   return (
     <div className='flex min-h-screen text-black' style={{ backgroundColor: '#F5EFFA' }}>
-      <Sidebar userData={userData} />
+      <AdminSidebar userData={userData} />
       <div className='flex-1 flex flex-col'>
         <Header userId={userData.id} />
         <main className='flex-1 pl-[50px] pr-[30px] h-[80%]' style={{ backgroundColor: '#F5EFFA' }}>
