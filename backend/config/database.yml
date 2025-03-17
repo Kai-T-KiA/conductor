@@ -24,4 +24,4 @@ production:
   # url: <%= ENV["postgresql://postgres:conductorgM163321@db.qkovjqdrixvhmhfnyepj.supabase.co:5432/postgres"] %>
   # url: <%= ENV["postgresql://postgres.qkovjqdrixvhmhfnyepj:conductorgM163321@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres"] %>
   url: <%= ENV["DATABASE_URL"] %>
-  # pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
