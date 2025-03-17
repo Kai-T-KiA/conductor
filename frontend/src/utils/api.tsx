@@ -34,7 +34,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const config:RequestInit = {
     ...options,
     // クロスオリジンリクエスト（異なるドメイン間のリクエスト）でCookieなどの認証情報を送信するかどうかを指定するオプション
-    credentials: 'omit',
+    credentials: 'include',
     headers,
   };
 
