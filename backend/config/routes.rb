@@ -6,12 +6,8 @@ Rails.application.routes.draw do
   # passwords: パスワードリセット処理
   devise_for :users, skip: [:sessions, :registrations, :passwords]
 
-  # アプリケーションの稼働状態を確認するためのヘルスチェックエンドポイント
-  # ロードバランサーやモニタリングツールからの定期的なチェックに使用
+  # ヘルスチェックと認証テスト用エンドポイント
   get 'api/v1/health', to: 'application#health'
-
-  # 認証が正しく機能しているかテストするためのエンドポイント
-  # 認証ヘッダーが正しく処理されているか確認する目的
   get 'test_auth', to: 'users#test_auth'
 
   # API v1名前空間の定義
@@ -34,9 +30,48 @@ Rails.application.routes.draw do
       end
 
       # ユーザー情報取得用のエンドポイント
+      # resourcesを使うとRESTfulルートが作成される
+      # onlyでは使用できるアクション（controllerで作成したメソッド）は指定したもののみ
+      # onは特定のユーザーを指定
       # 認証が必要なAPIエンドポイントの例
       # GET /api/v1/user
       resource :user, only: [:show]
+
+      # ユーザー管理API
+      resources :users do
+        # ユーザー固有の稼働時間を取得
+        resources :work_hours, only: [:index], on: :member
+
+        # ユーザー固有のタスクを取得
+        resources :tasks, only: [:index], on: :member
+
+        # ユーザー固有の月次支払いを取得
+        resources :monthly_payments, only: [:index], on: :member
+      end
+
+      # タスク管理API
+      resources :tasks do
+        # タスク固有の稼働時間を取得
+        resources :work_hours, only: [:index], on: :member
+      end
+
+      # 稼働時間管理API
+      resources :work_hours do
+        # 稼働時間サマリー取得
+        collection do
+          get 'summary'
+        end
+      end
+
+      # プロジェクト管理API
+      resources :projects do
+        # プロジェクト固有のタスクを取得
+        resources :tasks, only: [:index], on: :member
+      end
+
+      # ダッシュボードAPI
+      get 'dashboard', to: 'dashboard#index'
+
     end
   end
 end
