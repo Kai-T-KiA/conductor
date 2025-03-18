@@ -5,6 +5,8 @@ export PORT=${PORT:-3000}
 
 # If running the rails server then create or migrate existing database
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  # 既存のserver.pidファイルを削除
+  rm -f /rails/tmp/pids/server.pid
   ./bin/rails db:prepare
 fi
 
