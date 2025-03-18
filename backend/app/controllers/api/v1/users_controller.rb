@@ -30,7 +30,7 @@ module Api
         end
       end
 
-      POST /api/v1/users
+      # POST /api/v1/users
       # 新規ユーザーを作成（管理者専用）
       def create
         # パラメータからユーザーオブジェクトを生成
