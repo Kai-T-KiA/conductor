@@ -13,4 +13,5 @@ fi
 # Rails の実行パスを通す
 export PATH="/rails/bin:${PATH}"
 
+
 exec "${@}"
