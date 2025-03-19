@@ -32,7 +32,10 @@ module Api
           hourly_rate: current_user.hourly_rate
         }
 
-        # 最近の稼働時間データ取得（30日間）
+        # 今月の稼働時間データ取得（30日間）
+        # 月ごとに日数が違うから分岐処理が必要
+        # work_date: はデータベースのカラム
+        # recent_work_hoursはActive Recordオブジェクト
         recent_work_hours = current_user.work_hours
                                         .where(work_date: 30.days.ago..today)
                                         .order(work_date: :asc)
@@ -200,19 +203,19 @@ module Api
                                     )
 
         # 直近の支払い
-        recent_payments = MonthlyPayment.includes(:user, :client)
-                                        .order(created_at: :desc)
-                                        .limit(5)
-                                        .as_json(
-                                          only: [:id, :year_month, :total_amount, :payment_status, :created_at],
-                                          include: {
-                                            user: { only: [:id, :name] },
-                                            client: { only: [:id, :name] }
-                                          }
-                                        )
+        # recent_payments = MonthlyPayment.includes(:user, :client)
+        #                                 .order(created_at: :desc)
+        #                                 .limit(5)
+        #                                 .as_json(
+        #                                   only: [:id, :year_month, :total_amount, :payment_status, :created_at],
+        #                                   include: {
+        #                                     user: { only: [:id, :name] },
+        #                                     client: { only: [:id, :name] }
+        #                                   }
+        #                                 )
 
-        # 注意が必要なユーザー（30日間稼働なし）
-        inactive_users = User.where.not(id: WorkHour.where(work_date: 30.days.ago..today).select(:user_id).distinct).limit(5).as_json(only: [:id, :name, :email])
+        # # 注意が必要なユーザー（30日間稼働なし）
+        # inactive_users = User.where.not(id: WorkHour.where(work_date: 30.days.ago..today).select(:user_id).distinct).limit(5).as_json(only: [:id, :name, :email])
 
         # 統合ダッシュボードデータ
         {
