@@ -32,10 +32,103 @@ module Api
             end_date = Date.parse(params[:end_date])
             @work_hours = @work_hours.where(work_date: start_date..end_date)
           end
+
+          # 特定の年月の稼働時間取得（クエリパラメータがある場合）
+          if params[:year].present? && params[:month].present?
+            year = params[:year].to_i
+            month = params[:month].to_i
+            start_date = Date.new(year, month, 1)
+            end_date = start_date.end_of_month
+            @work_hours = @work_hours.where(work_date: start_date..end_date)
+          end
         end
 
         # 稼働時間一覧をJSON形式で返す
         render json: @work_hours, status: :ok
+      end
+
+      # GET /api/v1/work_hours/summary
+      # 稼働時間サマリーを取得（集計情報）
+      def summary
+        # リクエストパラメータから集計対象期間を取得
+        start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.today.beginning_of_month
+        end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : Date.today
+
+        # 年月指定がある場合は、その年月の範囲を設定
+        if params[:year].present? && params[:month].present?
+          year = params[:year].to_i
+          month = params[:month].to_i
+          start_date = Date.new(year, month, 1)
+          end_date = start_date.end_of_month
+        end
+
+        # 管理者と一般ユーザーで取得する集計情報を分ける
+        if current_user.admin?
+          # 管理者：全ユーザーの集計情報
+          # ユーザーごとの稼働時間集計
+          user_hours = WorkHour.where(work_date: start_date..end_date)
+                              .group(:user_id)
+                              .sum(:hours_worked)
+
+          # ユーザー情報と紐づけ
+          users_with_hours = User.where(id: user_hours.keys).map do |user|
+            {
+              user_id: user.id,
+              name: user.name,
+              hours_worked: user_hours[user.id]
+            }
+          end
+
+          # 全体の集計情報
+          summary_data = {
+            period: {
+              start_date: start_date,
+              end_date: end_date
+            },
+            total_hours: WorkHour.where(work_date: start_date..end_date).sum(:hours_worked),
+            users: users_with_hours
+          }
+        else
+          # 一般ユーザー：自分の集計情報のみ
+          # 日別の稼働時間集計
+          daily_hours = current_user.work_hours
+                                  .where(work_date: start_date..end_date)
+                                  .group(:work_date)
+                                  .sum(:hours_worked)
+
+          # 日付フォーマット調整
+          formatted_daily_hours = daily_hours.transform_keys { |k| k.strftime('%Y-%m-%d') }
+
+          # タスク別の稼働時間集計
+          task_hours = current_user.work_hours
+                                  .where(work_date: start_date..end_date)
+                                  .joins(:task)
+                                  .group('tasks.title')
+                                  .sum(:hours_worked)
+
+          # 週別の稼働時間集計
+          weekly_hours = {}
+          daily_hours.each do |date, hours|
+            week_start = date.beginning_of_week.strftime('%Y-%m-%d')
+            weekly_hours[week_start] ||= 0
+            weekly_hours[week_start] += hours
+          end
+
+          # ユーザーの集計情報
+          summary_data = {
+            period: {
+              start_date: start_date,
+              end_date: end_date
+            },
+            total_hours: current_user.work_hours.where(work_date: start_date..end_date).sum(:hours_worked),
+            daily_hours: formatted_daily_hours,
+            weekly_hours: weekly_hours,
+            task_breakdown: task_hours
+          }
+        end
+
+        # 集計情報をJSON形式で返す
+        render json: summary_data, status: :ok
       end
 
       # GET /api/v1/work_hours/:id
@@ -134,70 +227,70 @@ module Api
 
       # GET /api/v1/work_hours/summary
       # 稼働時間サマリーを取得（集計情報）
-      def summary
-        # リクエストパラメータから集計対象期間を取得
-        start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.today.beginning_of_month
-        end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : Date.today
+      # def summary
+      #   # リクエストパラメータから集計対象期間を取得
+      #   start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.today.beginning_of_month
+      #   end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : Date.today
 
-        # 管理者と一般ユーザーで取得する集計情報を分ける
-        if current_user.admin?
-          # 管理者：全ユーザーの集計情報
-          # ユーザーごとの稼働時間集計
-          user_hours = WorkHour.where(work_date: start_date..end_date)
-                              .group(:user_id)
-                              .sum(:hours_worked)
+      #   # 管理者と一般ユーザーで取得する集計情報を分ける
+      #   if current_user.admin?
+      #     # 管理者：全ユーザーの集計情報
+      #     # ユーザーごとの稼働時間集計
+      #     user_hours = WorkHour.where(work_date: start_date..end_date)
+      #                         .group(:user_id)
+      #                         .sum(:hours_worked)
 
-          # ユーザー情報と紐づけ
-          users_with_hours = User.where(id: user_hours.keys).map do |user|
-            {
-              user_id: user.id,
-              name: user.name,
-              hours_worked: user_hours[user.id]
-            }
-          end
+      #     # ユーザー情報と紐づけ
+      #     users_with_hours = User.where(id: user_hours.keys).map do |user|
+      #       {
+      #         user_id: user.id,
+      #         name: user.name,
+      #         hours_worked: user_hours[user.id]
+      #       }
+      #     end
 
-          # 全体の集計情報
-          summary_data = {
-            period: {
-              start_date: start_date,
-              end_date: end_date
-            },
-            total_hours: WorkHour.where(work_date: start_date..end_date).sum(:hours_worked),
-            users: users_with_hours
-          }
-        else
-          # 一般ユーザー：自分の集計情報のみ
-          # 日別の稼働時間集計
-          daily_hours = current_user.work_hours
-                                  .where(work_date: start_date..end_date)
-                                  .group(:work_date)
-                                  .sum(:hours_worked)
+      #     # 全体の集計情報
+      #     summary_data = {
+      #       period: {
+      #         start_date: start_date,
+      #         end_date: end_date
+      #       },
+      #       total_hours: WorkHour.where(work_date: start_date..end_date).sum(:hours_worked),
+      #       users: users_with_hours
+      #     }
+      #   else
+      #     # 一般ユーザー：自分の集計情報のみ
+      #     # 日別の稼働時間集計
+      #     daily_hours = current_user.work_hours
+      #                             .where(work_date: start_date..end_date)
+      #                             .group(:work_date)
+      #                             .sum(:hours_worked)
 
-          # 日付フォーマット調整
-          formatted_daily_hours = daily_hours.transform_keys { |k| k.strftime('%Y-%m-%d') }
+      #     # 日付フォーマット調整
+      #     formatted_daily_hours = daily_hours.transform_keys { |k| k.strftime('%Y-%m-%d') }
 
-          # タスク別の稼働時間集計
-          task_hours = current_user.work_hours
-                                  .where(work_date: start_date..end_date)
-                                  .joins(:task)
-                                  .group('tasks.title')
-                                  .sum(:hours_worked)
+      #     # タスク別の稼働時間集計
+      #     task_hours = current_user.work_hours
+      #                             .where(work_date: start_date..end_date)
+      #                             .joins(:task)
+      #                             .group('tasks.title')
+      #                             .sum(:hours_worked)
 
-          # ユーザーの集計情報
-          summary_data = {
-            period: {
-              start_date: start_date,
-              end_date: end_date
-            },
-            total_hours: current_user.work_hours.where(work_date: start_date..end_date).sum(:hours_worked),
-            daily_hours: formatted_daily_hours,
-            task_breakdown: task_hours
-          }
-        end
+      #     # ユーザーの集計情報
+      #     summary_data = {
+      #       period: {
+      #         start_date: start_date,
+      #         end_date: end_date
+      #       },
+      #       total_hours: current_user.work_hours.where(work_date: start_date..end_date).sum(:hours_worked),
+      #       daily_hours: formatted_daily_hours,
+      #       task_breakdown: task_hours
+      #     }
+      #   end
 
-        # 集計情報をJSON形式で返す
-        render json: summary_data, status: :ok
-      end
+      #   # 集計情報をJSON形式で返す
+      #   render json: summary_data, status: :ok
+      # end
 
       private
 

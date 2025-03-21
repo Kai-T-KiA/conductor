@@ -27,6 +27,10 @@ Rails.application.routes.draw do
         # テスト/開発用のヘルスチェックエンドポイント
         # GET /api/v1/test/health
         get 'test/health', to: 'test#health'
+
+        # メールアドレスでユーザーを取得するカスタムルート
+        # GET /api/v1/user/:email
+        # get ':email', to: 'users#show'
       end
 
       # resourcesを使うとRESTfulルートが作成される
@@ -37,6 +41,8 @@ Rails.application.routes.draw do
       # GET /api/v1/user
       # 単数形のresourceは、IDを指定せずに現在のユーザーを参照するため
       resource :user, only: [:show]
+      # resources :user, only: [:show], on: :member
+
 
       # ユーザー管理API
       # GET /api/v1/users - すべてのユーザー一覧を取得
@@ -54,7 +60,7 @@ Rails.application.routes.draw do
         resources :tasks, only: [:index], on: :member
 
         # GET /api/v1/users/:id/monthly_payments - 特定ユーザーの月次支払い一覧を取得
-        resources :monthly_payments, only: [:index], on: :member
+        # resources :monthly_payments, only: [:index], on: :member
       end
 
       # タスク管理API
@@ -67,6 +73,12 @@ Rails.application.routes.draw do
         # タスク固有の稼働時間を取得
         # GET /api/v1/tasks/:id/work_hours - 特定タスクに関連する稼働時間一覧を取得
         resources :work_hours, only: [:index], on: :member
+
+        # タスクサマリーとカレンダー表示用のエンドポイントを追加
+        collection do
+          get 'summary'
+          get 'calendar'
+        end
       end
 
       # 稼働時間管理API

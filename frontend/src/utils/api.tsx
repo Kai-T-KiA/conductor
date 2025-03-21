@@ -12,7 +12,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   // URLの構築
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`Making request to: ${url}`);
+  // console.log(`Making request to: ${url}`);
 
   // ヘッダーを明示的な型で定義
   const headers: Record<string, string> = {
@@ -24,11 +24,15 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   // 認証トークンがあれば追加
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
+    console.log('Token exists:', Boolean(token));
     if (token) {
-      console.log('Using token:', token.substring(0, 10) + '...');
+      console.log('Token prefix:', token ? token.substring(0, 10) + '...' : 'none');
       headers['Authorization'] = `Bearer ${token}`;
     }
   }
+
+  // リクエストヘッダーの確認
+  console.log('Request headers:', headers);
 
   // リクエスト設定(特定の値のみを許可するRequestCredentials型を設定)
   const config:RequestInit = {

@@ -3,6 +3,7 @@ module Api
     class UsersController < BaseController
       # 特定のユーザーを操作するアクションの前に、そのユーザーを取得
       before_action :set_user, only: [:show, :update, :destroy]
+      before_action :set_params, only: [:show, :update, :destroy]
 
       # 管理者以外はユーザー一覧取得、作成、削除ができないように制限
       before_action :authorize_admin, only: [:index, :create, :destroy]
@@ -19,16 +20,80 @@ module Api
 
       # GET /api/v1/users/:id
       # 特定のユーザー情報を取得
+      # def show
+      #   # binding.b
+      #   # 自分自身または管理者のみ閲覧可能とする権限チェック
+      #   if current_user.id == @user.id || current_user.admin?
+      #     # ユーザー情報をJSONで返す
+      #     render json: @user, status: :ok
+      #   else
+      #     # 権限がない場合は403 Forbiddenエラーを返す
+      #     render json: { error: '権限がありません', details: 'このユーザー情報の閲覧には適切な権限が必要です' }, status: :forbidden
+      #   end
+      # end
+
+      # GET /api/v1/user
+      # 現在のログインユーザー情報を取得
       def show
-        # 自分自身または管理者のみ閲覧可能とする権限チェック
-        if current_user.id == @user.id || current_user.admin?
-          # ユーザー情報をJSONで返す
-          render json: @user, status: :ok
-        else
-          # 権限がない場合は403 Forbiddenエラーを返す
-          render json: { error: '権限がありません', details: 'このユーザー情報の閲覧には適切な権限が必要です' }, status: :forbidden
-        end
+        # 現在のユーザー情報を取得
+        user_info = {
+          id: current_user.id,
+          name: current_user.name,
+          email: current_user.email,
+          hourly_rate: current_user.hourly_rate,
+          created_at: current_user.created_at
+        }
+
+        # ホーム画面に必要な追加情報を取得
+        today = Date.today
+
+        # 今月の稼働時間
+        current_month_hours = current_user.work_hours
+                                          .where(work_date: today.beginning_of_month..today.end_of_month)
+                                          .sum(:hours_worked)
+
+        # 今週の稼働時間
+        current_week_hours = current_user.work_hours
+                                        .where(work_date: today.beginning_of_week..today.end_of_week)
+                                        .sum(:hours_worked)
+
+        # タスク数
+        task_counts = {
+          total: current_user.tasks.count,
+          in_progress: current_user.tasks.where(status: 'in_progress').count,
+          completed: current_user.tasks.where(status: 'completed').count,
+          not_started: current_user.tasks.where(status: 'not_started').count
+        }
+
+        # ユーザー情報と追加データを結合
+        user_data = user_info.merge({
+          current_month_hours: current_month_hours,
+          current_week_hours: current_week_hours,
+          task_counts: task_counts
+        })
+
+        render json: user_data, status: :ok
       end
+
+      # GET /api/v1/user/:email
+      # メールアドレスでユーザーを検索して取得
+      # def show
+      #   @user = User.find_by(email: params[:email])
+        
+      #   if @user.nil?
+      #     render json: { error: 'ユーザーが見つかりません', details: '指定されたメールアドレスのユーザーは存在しません' }, status: :not_found
+      #     return
+      #   end
+        
+      #   # 自分自身または管理者のみ閲覧可能とする権限チェック
+      #   if current_user.id == @user.id || current_user.admin?
+      #     # ユーザー情報をJSONで返す
+      #     render json: @user, status: :ok
+      #   else
+      #     # 権限がない場合は403 Forbiddenエラーを返す
+      #     render json: { error: '権限がありません', details: 'このユーザー情報の閲覧には適切な権限が必要です' }, status: :forbidden
+      #   end
+      # end
 
       # POST /api/v1/users
       # 新規ユーザーを作成（管理者専用）
@@ -85,15 +150,19 @@ module Api
 
       # URLパラメータからユーザーを特定するメソッド
       def set_user
+        puts 'zzzzzzz'
         # URLのidパラメータでユーザーを検索
         # ユーザーが見つからない場合は自動的に404エラーが発生
-        @user = User.find(params[:id])
+        puts params[:email]
+        @user = User.find(params[:email])
+        # @user = User.find('1')
+        puts @user
       end
 
       # 許可されたパラメータのみを取得するストロングパラメータ設定
       def user_params
         # userパラメータの中から許可された属性のみを抽出
-        params.require(:user).permit(:name, :email, :password, :password_confirmation, :hourly_rate, :role)
+        params.require(:user).permit(:name, :email, :password, :password_confirmation, :hourly_rate, :role, :id)
       end
 
       # 管理者権限を確認するメソッド

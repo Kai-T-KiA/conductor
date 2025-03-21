@@ -524,6 +524,189 @@ end
 
 puts "Created #{MonthlyPayment.count} monthly payments with #{InvoiceItem.count} invoice items"
 
+
+
+puts "Creating March 2025 work hours data..."
+
+# 3月の稼働日を生成
+def generate_march_dates(year = 2025)
+  dates = []
+
+  # 2025年3月の平日を生成
+  (14..31).each do |day|
+    date = Date.new(year, 3, day)
+    # 土日はスキップ（平日のみ稼働）
+    next if date.saturday? || date.sunday?
+    dates << date
+  end
+
+  dates
+end
+
+# 田中太郎の3月稼働時間データ
+taro_march_dates = generate_march_dates
+taro_march_work_hours = []
+
+# 稼働パターンの設定 - 毎日の稼働時間パターン (時間)
+taro_work_pattern = [8, 7.5, 8.5, 6, 7, 8, 7, 6.5, 8, 8.5, 7, 8, 7.5, 7, 8, 8.5, 6, 7, 8, 7.5, 8]
+
+taro_march_dates.each_with_index do |date, idx|
+  # タスクをランダムに選択
+  task = created_tasks.select { |t| t.user_id == user1.id }.sample
+
+  # 稼働時間はパターンから取得（配列を循環させる）
+  hours = taro_work_pattern[idx % taro_work_pattern.length]
+
+  # 午前9時固定の開始時間
+  start_time = Time.new(date.year, date.month, date.day, 9, 0, 0)
+
+  # 実働時間を計算（休憩時間を考慮）
+  work_end_hours = 9 + hours
+  work_end_minutes = ((work_end_hours - work_end_hours.to_i) * 60).to_i
+
+  # 8時間を超える場合は8時間に制限
+  hours = [hours, 8.0].min
+
+  # 休憩を含む終了時間（8時間勤務なら9時間後に設定）
+  # 例：7.5時間なら9:00 + 8.5時間 = 17:30
+  actual_hours = hours >= 6 ? hours + 1 : hours + 0.5  # 6時間以上なら1時間休憩、それ以下なら30分休憩
+  end_time_hours = 9 + actual_hours.to_i
+  end_time_minutes = ((actual_hours - actual_hours.to_i) * 60).to_i
+  end_time = Time.new(date.year, date.month, date.day, end_time_hours, end_time_minutes, 0)
+
+  taro_march_work_hours << {
+    user: user1,
+    task: task,
+    work_date: date,
+    start_time: start_time,
+    end_time: end_time,
+    hours_worked: hours,  # 実際の稼働時間（休憩を除く）
+    activity_description: "#{task.title}の作業 - 3月特別対応"
+  }
+end
+
+# 佐藤花子の3月稼働時間データ
+hanako_march_dates = generate_march_dates
+hanako_march_work_hours = []
+
+# 佐藤花子の稼働パターン - 少し異なるパターン
+hanako_work_pattern = [7, 8, 7.5, 6.5, 7, 0, 8, 7.5, 8, 6, 7.5, 8, 7, 0, 8, 7.5, 6, 8, 7, 6.5, 8]
+
+hanako_march_dates.each_with_index do |date, idx|
+  # タスクをランダムに選択
+  task = created_tasks.select { |t| t.user_id == user2.id }.sample
+
+  # 稼働時間はパターンから取得（配列を循環させる）
+  hours = hanako_work_pattern[idx % hanako_work_pattern.length]
+
+  # 稼働時間が0（休暇）の場合はスキップ
+  next if hours == 0
+
+  # 午前10時固定の開始時間
+  start_time = Time.new(date.year, date.month, date.day, 10, 0, 0)
+
+  # 実働時間を計算（休憩時間を考慮）
+  work_end_hours = 10 + hours
+  work_end_minutes = ((work_end_hours - work_end_hours.to_i) * 60).to_i
+
+  # 8時間を超える場合は8時間に制限
+  hours = [hours, 8.0].min
+
+  # 休憩を含む終了時間（8時間勤務なら9時間後に設定）
+  # 例：7.5時間なら9:00 + 8.5時間 = 17:30
+  actual_hours = hours >= 6 ? hours + 1 : hours + 0.5  # 6時間以上なら1時間休憩、それ以下なら30分休憩
+  end_time_hours = 10 + actual_hours.to_i
+  end_time_minutes = ((actual_hours - actual_hours.to_i) * 60).to_i
+  end_time = Time.new(date.year, date.month, date.day, end_time_hours, end_time_minutes, 0)
+
+  hanako_march_work_hours << {
+    user: user2,
+    task: task,
+    work_date: date,
+    start_time: start_time,
+    end_time: end_time,
+    hours_worked: hours,
+    activity_description: "#{task.title}の実装 - 3月特別作業"
+  }
+end
+
+# 3月の稼働時間データをデータベースに登録
+march_work_hour_records = taro_march_work_hours + hanako_march_work_hours
+
+march_work_hour_records.each do |wh_attrs|
+  WorkHour.find_or_create_by(
+    user: wh_attrs[:user],
+    task: wh_attrs[:task],
+    work_date: wh_attrs[:work_date]
+  ) do |wh|
+    wh.attributes = wh_attrs
+  end
+end
+
+puts "Created #{march_work_hour_records.length} March 2025 work hour records"
+
+# 3月の月次支払いデータを作成
+puts "Creating March 2025 monthly payments data..."
+
+month_date = Date.new(2025, 3, 1)
+
+# ユーザーごとに月次支払いデータを作成
+[user1, user2].each do |user|
+  # クライアントごとの稼働時間を集計
+  march_hours = user.work_hours
+                    .where(work_date: month_date.beginning_of_month..month_date.end_of_month)
+                    .sum(:hours_worked)
+
+  if march_hours > 0
+    # クライアントごとの稼働時間を集計
+    client_hours = {}
+
+    user.work_hours
+      .where(work_date: month_date.beginning_of_month..month_date.end_of_month)
+      .includes(task: :project).each do |wh|
+        client_id = wh.task.project.client_id
+        client_hours[client_id] ||= 0
+        client_hours[client_id] += wh.hours_worked
+    end
+
+    # クライアントごとの支払いデータを作成
+    client_hours.each do |client_id, hours|
+      client = Client.find(client_id)
+      amount = (hours * user.hourly_rate).round  # 稼働時間 × 時給 = 支払い金額
+
+      # 支払い状況（3月分はまだ未払い）
+      payment_status = "pending"
+      # 支払い日はまだ設定しない
+      payment_date = nil
+
+      monthly_payment = MonthlyPayment.find_or_create_by(
+        user: user,
+        client: client,
+        year_month: month_date
+      ) do |mp|
+        mp.total_amount = amount
+        mp.currency = "JPY"
+        mp.payment_status = payment_status
+        mp.payment_date = payment_date
+        mp.payment_method = "bank_transfer"  # 銀行振込
+      end
+
+      # 請求明細の作成
+      if monthly_payment.invoice_items.empty?
+        InvoiceItem.create!(
+          monthly_payment: monthly_payment,
+          description: "#{month_date.strftime('%Y年%m月')}の#{client.name}プロジェクト稼働分",
+          quantity: hours,
+          unit_price: user.hourly_rate,
+          amount: amount
+        )
+      end
+    end
+  end
+end
+
+puts "Created March 2025 monthly payments data"
+
 # ==============================================================================
 # 投入完了メッセージ
 # ==============================================================================

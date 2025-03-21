@@ -34,6 +34,16 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true  # メールアドレスは必須かつ一意
   validates :hourly_rate, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true  # 時給は0以上または未設定
 
+  # roleの定数定義（必要に応じて）
+  ROLE_USER = 0
+  ROLE_ADMIN = 1
+
+  # admin?メソッドを追加
+  def admin?
+    # roleカラムが1（管理者）の場合はtrue、それ以外はfalse
+    role == 1 || role == ROLE_ADMIN
+  end
+
   # ユーザーの総稼働時間を計算するメソッド
   # @return [Decimal] 全期間の合計稼働時間
   def total_hours_worked
@@ -64,4 +74,62 @@ class User < ApplicationRecord
     year, month
     ).sum(:total_amount)
   end
+
+  # 稼働率を計算するメソッド（特定の期間における稼働時間 / 想定稼働時間）
+  # @param year [Integer] 年
+  # @param month [Integer] 月
+  # @return [Float] 稼働率（パーセンテージ）
+  def working_rate(year = Date.today.year, month = Date.today.month)
+    # 対象月の開始日と終了日
+    start_date = Date.new(year, month, 1)
+    end_date = start_date.end_of_month
+
+    # 対象月の稼働日数を計算（平日のみカウント）
+    business_days = (start_date..end_date).count { |date| !date.saturday? && !date.sunday? }
+
+    # 想定稼働時間（平日 * 8時間）
+    expected_hours = business_days * 8
+
+    # 実際の稼働時間
+    actual_hours = self.work_hours.where(work_date: start_date..end_date).sum(:hours_worked)
+
+    # 稼働率を計算（パーセンテージに変換）
+    return expected_hours > 0 ? (actual_hours / expected_hours.to_f * 100).round(2) : 0
+  end
+
+  # 当日の稼働時間を取得
+  # @return [Float] 当日の合計稼働時間
+  def today_hours
+    self.work_hours.where(work_date: Date.today).sum(:hours_worked)
+  end
+
+  # 今週の稼働時間を取得
+  # @return [Float] 今週の合計稼働時間
+  def this_week_hours
+    start_date = Date.today.beginning_of_week
+    end_date = Date.today.end_of_week
+    self.work_hours.where(work_date: start_date..end_date).sum(:hours_worked)
+  end
+
+  # 今月の稼働時間を取得
+  # @return [Float] 今月の合計稼働時間
+  def this_month_hours
+    start_date = Date.today.beginning_of_month
+    end_date = Date.today.end_of_month
+    self.work_hours.where(work_date: start_date..end_date).sum(:hours_worked)
+  end
+
+  # 未完了のタスク数を取得
+  # @return [Integer] 未完了タスク数
+  def pending_tasks_count
+    self.tasks.where.not(status: 'completed').count
+  end
+
+  # 期限切れのタスク数を取得
+  # @return [Integer] 期限切れタスク数
+  def overdue_tasks_count
+    self.tasks.where('due_date < ? AND status != ?', Date.today, 'completed').count
+  end
+
+
 end
