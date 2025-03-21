@@ -58,6 +58,10 @@ export default function UserHomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 稼働状態を管理するステート
+  const [isWorking, setIsWorking] = useState(false);
+  const [currentWorkHour, setCurrentWorkHour] = useState<number | null>(null);
+
   // ダッシュボードデータを取得する関数
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -66,6 +70,27 @@ export default function UserHomePage() {
       const data = await fetchAPI('/api/v1/dashboard');
 
       setDashboardData(data);
+
+      // 本日の稼働記録をチェックして稼働中かどうかを判定
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD形式
+      const todayHours = data.working_hours.daily_hours[today] || 0;
+
+      // 本日の稼働時間記録があり、まだ稼働中（end_timeがない）の記録を取得
+      if (todayHours > 0) {
+        // 本日の稼働記録を取得
+        const todayWorkHours = await fetchAPI('/api/v1/work_hours?start_date=' + today + '&end_date=' + today);
+
+        // 稼働中のレコードがあるか確認（end_timeが空のレコードを探す）
+        const activeWorkHour = todayWorkHours.find((wh: any) =>
+          !wh.end_time || wh.end_time === '' || wh.end_time === null
+        );
+
+        if (activeWorkHour) {
+          setIsWorking(true);
+          setCurrentWorkHour(activeWorkHour.id);
+        }
+      }
+
       setError(null);
     } catch (err) {
       console.error('API error details:', err);
@@ -81,47 +106,89 @@ export default function UserHomePage() {
     fetchDashboardData();
   }, []);
 
-  // 稼働開始ボタンのクリックイベントハンドラ
-  const handleStartWork = async () => {
+  // 稼働開始/終了ボタンのクリックイベントハンドラ
+  const handleWorkToggle = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('認証情報が見つかりません');
       }
 
-      // 稼働開始APIを呼び出す
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/work_hours`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          work_hour: {
-            work_date: new Date().toISOString().split('T')[0],
-            start_time: new Date().toTimeString().split(' ')[0].substring(0, 5),
-            end_time: '', // 稼働終了時に設定
-            hours_worked: 0, // 稼働終了時に計算
-            activity_description: '稼働開始',
-            task_id: null // タスク選択UI未実装なので一旦null
-          }
-        })
-      });
+      if (isWorking && currentWorkHour) {
+        // 稼働終了処理
+        const now = new Date();
+        const endTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MMフォーマット
 
-      if (!response.ok) {
-        throw new Error('稼働開始に失敗しました');
+        const response = await fetch(`${API_BASE_URL}/api/v1/work_hours/${currentWorkHour}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            work_hour: {
+              end_time: endTime,
+              // 稼働時間は自動計算されるのでここでは設定しない
+              activity_description: '稼働完了'
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`稼働終了に失敗しました: ${JSON.stringify(errorData)}`);
+        }
+
+        window.alert('稼働を終了しました');
+        setIsWorking(false);
+        setCurrentWorkHour(null);
+
+      } else {
+        const now = new Date();
+        const startTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MMフォーマット
+
+        // end_timeに仮の値を設定（バックエンドでのバリデーション対応）
+        const tempEndTime = new Date(now.getTime() + 60000).toTimeString().split(' ')[0].substring(0, 5);
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/work_hours`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            work_hour: {
+              work_date: now.toISOString().split('T')[0],
+              start_time: startTime,
+              end_time: tempEndTime, // 仮の終了時間
+              hours_worked: 0.01, // 最小値を設定
+              activity_description: '稼働開始'
+              // task_idは指定しない
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`稼働開始に失敗しました: ${JSON.stringify(errorData)}`);
+        }
+
+        // 作成された稼働レコードを取得
+        const createdWorkHour = await response.json();
+
+        window.alert('稼働を開始しました');
+        setIsWorking(true);
+        setCurrentWorkHour(createdWorkHour.id);
       }
-
-      // 稼働開始成功のメッセージ
-      window.alert('稼働を開始しました');
 
       // ダッシュボードデータを再取得
       fetchDashboardData();
     } catch (error) {
-      console.error('稼働開始エラー:', error);
-      window.alert('稼働開始に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
+      console.error('稼働処理エラー:', error);
+      window.alert(error instanceof Error ? error.message : '不明なエラー');
     }
   };
+
 
   // console.log('dashboardData')
   // console.log(dashboardData);
@@ -179,7 +246,7 @@ export default function UserHomePage() {
         <div className='h-full'>
           <h2 className='text-4xl font-semibold mb-4'>稼働状況</h2>
           <div className='bg-white rounded-lg p-6 shadow-sm'>
-          <HomeCalendar calendarData={dashboardData.calendar_data} />
+          <HomeCalendar calendarData={dashboardData?.calendar_data} />
           </div>
         </div>
 
@@ -220,15 +287,19 @@ export default function UserHomePage() {
             <TaskList tasks={dashboardData.weekly_tasks} />
           </div>
 
-          {/* 稼働開始ボタン */}
+          {/* 稼働開始/終了ボタン */}
           <div className='flex justify-center mt-25'>
-              <button
-                className='w-80 h-80 bg-purple-500 hover:bg-purple-600 text-white text-4xl font-bold rounded-full transition duration-200 cursor-pointer'
-                onClick={handleStartWork}
-              >
-                稼働開始
-              </button>
-            </div>
+            <button
+              className={`w-80 h-80 ${
+                isWorking
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-purple-500 hover:bg-purple-600'
+              } text-white text-4xl font-bold rounded-full transition duration-200 cursor-pointer`}
+              onClick={handleWorkToggle}
+            >
+              {isWorking ? '稼働終了' : '稼働開始'}
+            </button>
+          </div>
         </div>
       </div>
     </>

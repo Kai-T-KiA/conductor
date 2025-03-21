@@ -10,13 +10,14 @@
 class WorkHour < ApplicationRecord
   # リレーションシップ定義
   belongs_to :user  # 稼働時間は一人のユーザーに紐づく
-  belongs_to :task  # 稼働時間は一つのタスクに紐づく
+  belongs_to :task, optional: true  # 稼働時間は一つのタスクに紐づく
 
   # バリデーション設定
   validates :work_date, presence: true  # 稼働日は必須
   validates :start_time, presence: true  # 開始時間は必須
-  validates :end_time, presence: true  # 終了時間は必須
-  validates :hours_worked, presence: true, numericality: { greater_than: 0 }  # 稼働時間は必須かつ0より大きい数値
+  # end_timeとhours_workedは稼働終了時に設定するので必須にしない
+  # validates :end_time, presence: true  # 終了時間は必須
+  # validates :hours_worked, presence: true, numericality: { greater_than: 0 }  # 稼働時間は必須かつ0より大きい数値
   validate :end_time_after_start_time  # カスタムバリデーション：終了時間が開始時間より後か確認
 
   # スコープ定義（頻繁に使用されるクエリパターンをメソッド化）
