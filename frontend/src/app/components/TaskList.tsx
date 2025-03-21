@@ -1,38 +1,41 @@
 'use client';
 
-// import { Circle } from 'lucide-react';
-
 // タスクデータの型定義
 type Task = {
   id: number;
-  name: string;
-  date: string;
-  status: '未完了' | '進行中' | '完了';
+  title: string;
+  due_date: string;
+  status: string;
+  priority: string;
 };
 
-export default function TaskList() {
-  // タスクデータ（実際の実装ではAPIから取得）
-  const taskData: Task[] = [
-    { id: 1, name: '週次進捗レポート作成', date: '2025/3/4', status: '未完了' },
-    { id: 2, name: 'ランディングページのデザイン更新', date: '2025/3/5', status: '進行中' },
-    { id: 3, name: 'UIコンポーネント実装', date: '2025/3/7', status: '完了' }
-  ];
+type TaskListProps = {
+  tasks?: Task[];
+};
 
+export default function TaskList({ tasks = [] }: TaskListProps) {
   // タスクのステータスに応じた色を取得
-  const getStatusColor = (status: Task['status']): string => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
-      case '未完了': return 'text-red-500';
-      case '進行中': return 'text-blue-500';
-      case '完了': return 'text-green-500';
+      case 'not_started': return 'text-red-500';
+      case 'in_progress': return 'text-blue-500';
+      case 'completed': return 'text-green-500';
+      case 'review': return 'text-yellow-500';
       default: return 'text-gray-500';
     }
+  };
+
+  // 日付をフォーマット
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ja-JP');
   };
 
   return (
     <div className="mb-4">
       <div className="text-sm font-medium mb-2">直近の期限</div>
       <ul>
-        {taskData.map((task) => (
+        {tasks.map((task) => (
           <li key={task.id} className="flex items-center mb-2">
             <div className={`w-2.5 h-2.5 rounded-full ${
               getStatusColor(task.status).replace('text-', 'bg-')
@@ -54,8 +57,8 @@ export default function TaskList() {
                 </svg>
               </div>
             </div>
-            <span className="ml-2 text-sm">{task.name}</span>
-            <span className="ml-auto text-sm text-gray-500">{task.date}</span>
+            <span className="ml-2 text-sm">{task.title}</span>
+            <span className="ml-auto text-sm text-gray-500">{formatDate(task.due_date)}</span>
           </li>
         ))}
       </ul>

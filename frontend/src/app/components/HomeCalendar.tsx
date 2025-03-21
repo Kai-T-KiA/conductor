@@ -3,53 +3,42 @@
 import { useState } from 'react';
 
 // カレンダーデータの型定義
-type CalendarDayData = {
-  day: number;
-  hours: number;
+type CalendarProps = {
+  calendarData?: Record<string, number>;
 };
 
-export default function HomeCalendar() {
+export default function HomeCalendar({ calendarData = {} }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 2)); // 2025年3月
 
-  // カレンダーの日付と稼働時間のデータ(実施はAPIで取得してくる)
-  const calendarData: CalendarDayData[] = [
-    { day: 1, hours: 0 },
-    { day: 2, hours: 8.5 },
-    { day: 3, hours: 0 },
-    { day: 4, hours: 7.5 },
-    { day: 5, hours: 6 },
-    { day: 6, hours: 8 },
-    { day: 7, hours: 9 },
-    { day: 8, hours: 4 },
-    { day: 9, hours: 0 },
-    { day: 10, hours: 0 },
-    { day: 11, hours: 7.5 },
-    { day: 12, hours: 8 },
-    { day: 13, hours: 0 },
-    { day: 14, hours: 0 },
-    { day: 15, hours: 0 },
-    { day: 16, hours: 0 },
-    { day: 17, hours: 0 },
-    { day: 18, hours: 0 },
-    { day: 19, hours: 0 },
-    { day: 20, hours: 0 },
-    { day: 21, hours: 0 },
-    { day: 22, hours: 0 },
-    { day: 23, hours: 0 },
-    { day: 24, hours: 0 },
-    { day: 25, hours: 0 },
-    { day: 26, hours: 0 },
-    { day: 27, hours: 0 },
-    { day: 28, hours: 0 },
-    { day: 29, hours: 0 },
-    { day: 30, hours: 0 },
-    { day: 31, hours: 0 },
-  ];
+  // console.log(calendarData);
 
   // 当月の日付を取得
   const getDaysInMonth = (year: number, month: number): number => {
     return new Date(year, month + 1, 0).getDate();
   };
+
+  // APIから取得したデータをカレンダー形式に変換
+  const processCalendarData = () => {
+    const result = [];
+    const daysInMonth = getDaysInMonth(currentMonth.getFullYear(), currentMonth.getMonth());
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateString = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const hours = calendarData[dateString] || 0;
+
+      result.push({
+        day: i,
+        hours: hours
+      });
+    }
+
+    return result;
+  };
+
+  // 変換したデータを使用
+  const calendarDataArray = processCalendarData();
+  // console.log('カレンダー表示用のデータ');
+  // console.log(calendarDataArray);
 
   const daysInMonth = getDaysInMonth(currentMonth.getFullYear(), currentMonth.getMonth());
 
@@ -61,14 +50,14 @@ export default function HomeCalendar() {
   const firstDayOfMonth = getFirstDayOfMonth(currentMonth.getFullYear(), currentMonth.getMonth());
 
   // 前月に移動
-  const goToPreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
+  // const goToPreviousMonth = () => {
+  //   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  // };
 
   // 翌月に移動
-  const goToNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
-  };
+  // const goToNextMonth = () => {
+  //   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  // };
 
   // 労働時間に応じた背景色のクラスを取得
   const getHoursClass = (hours: number): string => {
@@ -91,9 +80,9 @@ export default function HomeCalendar() {
     <>
       {/* カレンダーナビゲーション */}
       <div className="flex justify-between items-center mb-10">
-        <button onClick={goToPreviousMonth} className="text-xl">◀</button>
-        <h3 className="text-4xl font-bold">{formatMonth(currentMonth)}</h3>
-        <button onClick={goToNextMonth} className="text-xl">▶</button>
+        {/* <button onClick={goToPreviousMonth} className="text-xl">◀</button> */}
+        <h3 className="text-4xl font-bold mx-auto">{formatMonth(currentMonth)}</h3>
+        {/* <button onClick={goToNextMonth} className="text-xl">▶</button> */}
       </div>
 
       {/* 曜日ヘッダー */}
@@ -111,23 +100,23 @@ export default function HomeCalendar() {
         ))}
 
         {/* 日付セル */}
-        {calendarData.map((item) => {
-          const dayData = calendarData.find(d => d.day === item.day) || { hours: 0 };
-          const isToday = item.day === 1; // 例として1日を「今日」とする
+        {calendarDataArray.map((item) => {
+          const dayData = calendarDataArray.find(d => d.day === item.day) || { hours: 0 };
+          const isToday = item.day === 21; // 例として1日を「今日」とする
 
           return (
             <div
               key={item.day}
-              className={`relative w-20 h-20 rounded-full flex flex-col items-center justify-center ${getHoursClass(dayData.hours)}`}
+              className={`relative w-20 h-20 ${getHoursClass(dayData.hours)} flex flex-col items-center justify-center rounded-full`}
             >
               {isToday ? (
-                <div className="w-15 h-15 rounded-full border-2 border-blue-500 flex items-center justify-center text-[30px]">
+                <div className="font-bold text-[24px] text-blue-600 border-b-2 border-blue-500">
                   {item.day}
                 </div>
               ) : (
-                <div className='text-[30px]'>{item.day}</div>
+                <div className="text-[24px]">{item.day}</div>
               )}
-              {dayData.hours > 0 && <div className="text-[30px] mt-1">{dayData.hours}</div>}
+              {dayData.hours > 0 && <div className="text-[18px] mt-1">{dayData.hours}</div>}
             </div>
           );
         })}

@@ -43,4 +43,30 @@ class Task < ApplicationRecord
     remaining = (estimated_hours || 0) - actual_hours_worked
     [remaining, 0].max  # 0未満にならないよう調整
   end
+
+  # 残りの見積もり時間に基づいて予想完了日を計算
+  # @return [Date] 予想完了日
+  def estimated_completion_date
+    # タスクがすでに完了している場合は nil を返す
+    return nil if status == 'completed'
+
+    # 残りの見積もり時間を取得
+    remaining = remaining_hours
+
+    # 残り時間が0以下の場合は今日を返す
+    return Date.today if remaining <= 0
+
+    # 1日あたりの平均稼働時間を計算（過去7日間）
+    recent_work_hours = user.work_hours.where(work_date: 7.days.ago..Date.today)
+    daily_hours = recent_work_hours.any? ? recent_work_hours.sum(:hours_worked) / 7.0 : 4.0
+
+    # 平均稼働時間が極端に小さい場合はデフォルト値を使用
+    daily_hours = 4.0 if daily_hours < 1.0
+
+    # 残り日数を計算（残り時間 / 1日の稼働時間）
+    days_needed = (remaining / daily_hours).ceil
+
+    # 予想完了日を計算（土日を考慮しない単純計算）
+    return Date.today + days_needed.days
+  end
 end
