@@ -402,13 +402,25 @@ end
 
 # 稼働時間データベースへの登録
 work_hour_records = taro_work_hours + hanako_work_hours
+# 稼働時間データの作成
 work_hour_records.each do |wh_attrs|
-  WorkHour.find_or_create_by(
+  attributes_for_find = {
     user: wh_attrs[:user],
-    task: wh_attrs[:task],
     work_date: wh_attrs[:work_date]
-  ) do |wh|
-    wh.attributes = wh_attrs
+  }
+  # taskが存在する場合のみ検索条件に含める
+  attributes_for_find[:task] = wh_attrs[:task] if wh_attrs[:task]
+
+  WorkHour.find_or_create_by(attributes_for_find) do |wh|
+    # task_idが必須でなくなったので、task属性が存在する場合のみ設定
+    if wh_attrs[:task]
+      wh.task = wh_attrs[:task]
+    end
+    # その他の属性を設定
+    wh.start_time = wh_attrs[:start_time]
+    wh.end_time = wh_attrs[:end_time]
+    wh.hours_worked = wh_attrs[:hours_worked]
+    wh.activity_description = wh_attrs[:activity_description]
   end
 end
 
@@ -574,15 +586,28 @@ taro_march_dates.each_with_index do |date, idx|
   end_time_minutes = ((actual_hours - actual_hours.to_i) * 60).to_i
   end_time = Time.new(date.year, date.month, date.day, end_time_hours, end_time_minutes, 0)
 
+  # 既存の稼働時間記録（タスクあり）
   taro_march_work_hours << {
     user: user1,
     task: task,
     work_date: date,
     start_time: start_time,
     end_time: end_time,
-    hours_worked: hours,  # 実際の稼働時間（休憩を除く）
+    hours_worked: hours,
     activity_description: "#{task.title}の作業 - 3月特別対応"
   }
+
+  # テスト用：タスクなしの稼働時間記録も1件追加
+  if date == taro_march_dates.last  # 最後の日にちだけ追加
+    taro_march_work_hours << {
+      user: user1,
+      work_date: date,
+      start_time: "09:00",
+      end_time: "12:00",
+      hours_worked: 3,
+      activity_description: "一般作業（タスクなし）"
+    }
+  end
 end
 
 # 佐藤花子の3月稼働時間データ
@@ -619,6 +644,7 @@ hanako_march_dates.each_with_index do |date, idx|
   end_time_minutes = ((actual_hours - actual_hours.to_i) * 60).to_i
   end_time = Time.new(date.year, date.month, date.day, end_time_hours, end_time_minutes, 0)
 
+  # 既存の稼働時間記録（タスクあり）
   hanako_march_work_hours << {
     user: user2,
     task: task,
@@ -628,17 +654,35 @@ hanako_march_dates.each_with_index do |date, idx|
     hours_worked: hours,
     activity_description: "#{task.title}の実装 - 3月特別作業"
   }
+
+  # テスト用：タスクなしの稼働時間記録も1件追加
+  if date == hanako_march_dates.last  # 最後の日にちだけ追加
+    hanako_march_work_hours << {
+      user: user2,
+      # taskは含めない
+      work_date: date,
+      start_time: "13:00",
+      end_time: "17:00",
+      hours_worked: 4,
+      activity_description: "一般作業（タスクなし）"
+    }
+  end
 end
 
 # 3月の稼働時間データをデータベースに登録
 march_work_hour_records = taro_march_work_hours + hanako_march_work_hours
 
 march_work_hour_records.each do |wh_attrs|
-  WorkHour.find_or_create_by(
+  # 検索条件からtaskを取り除き、条件付きで追加
+  find_conditions = {
     user: wh_attrs[:user],
-    task: wh_attrs[:task],
     work_date: wh_attrs[:work_date]
-  ) do |wh|
+  }
+
+  # taskが存在する場合のみ検索条件に含める
+  find_conditions[:task] = wh_attrs[:task] if wh_attrs[:task]
+
+  WorkHour.find_or_create_by(find_conditions) do |wh|
     wh.attributes = wh_attrs
   end
 end
