@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import HomeCalendar from '../../components/HomeCalendar';
 import TaskList from '../../components/TaskList';
+import WorkingTimer from '../../components/WorkingTimer';
 
 import { API_BASE_URL, fetchAPI } from '../../../utils/api';
 
@@ -49,8 +50,14 @@ type TaskStatusCounts = {
   completed: number;
   in_progress: number;
   uncompleted: number;
-};
+}
 
+// 稼働情報の型定義
+interface WorkingState {
+  isWorking: boolean;
+  startTime: number | null; // Unix timestamp (milliseconds)
+  workHourId: number | null;
+}
 
 export default function UserHomePage() {
   // ダッシュボードデータの状態
@@ -58,9 +65,119 @@ export default function UserHomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // // 稼働状態を管理するステート
+  // const [isWorking, setIsWorking] = useState(false);
+  // const [currentWorkHour, setCurrentWorkHour] = useState<number | null>(null);
+
+  // // 稼働時間管理のステート
+  // const [elapsedTime, setElapsedTime] = useState(0); // 経過時間（秒）
+  // const [startTimestamp, setStartTimestamp] = useState<number | null>(null);
+  // const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 稼働状態を管理するステート
-  const [isWorking, setIsWorking] = useState(false);
-  const [currentWorkHour, setCurrentWorkHour] = useState<number | null>(null);
+  const [workingState, setWorkingState] = useState<WorkingState>({
+    isWorking: false,
+    startTime: null,
+    workHourId: null
+  });
+
+  // 現在の経過時間（秒）
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+
+  // // 稼働情報をローカルストレージから復元
+  // useEffect(() => {
+  //   const savedState = localStorage.getItem('workingState');
+  //   if (savedState) {
+  //     const parsedState = JSON.parse(savedState) as WorkingState;
+  //     setWorkingState(parsedState);
+
+  //     // 開始時間が保存されていれば、経過時間を計算
+  //     if (parsedState.startTime) {
+  //       const nowMs = Date.now();
+  //       const elapsedMs = nowMs - parsedState.startTime;
+  //       setElapsedTime(Math.floor(elapsedMs / 1000));
+  //     }
+  //   }
+  // }, []);
+
+  // localStorage から稼働状態を読み込む useEffect
+  useEffect(() => {
+    try {
+      const savedStateString = localStorage.getItem('workingState');
+      if (savedStateString) {
+        const savedState = JSON.parse(savedStateString);
+        console.log('ストレージから読み込まれた稼働状態:', savedState);
+
+        // 正しく構造化されたオブジェクトであることを確認
+        if (savedState &&
+            typeof savedState === 'object' &&
+            'isWorking' in savedState &&
+            'startTime' in savedState &&
+            'workHourId' in savedState) {
+
+          // 稼働中の状態が保存されている場合
+          if (savedState.isWorking && savedState.startTime) {
+            // 現在の経過時間を計算（ミリ秒→秒変換）
+            const nowMs = Date.now();
+            const elapsedMs = nowMs - savedState.startTime;
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+            console.log('計算された経過時間（秒）:', elapsedSeconds);
+
+            // 状態を復元
+            setWorkingState(savedState);
+            setElapsedTime(elapsedSeconds);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('localStorage からの状態復元エラー:', error);
+      // エラーが発生した場合は初期状態に戻す
+      localStorage.removeItem('workingState');
+    }
+  }, []);
+
+  // 経過時間を更新するタイマー
+  useEffect(() => {
+    let timerId: NodeJS.Timeout | null = null;
+
+    if (workingState.isWorking && workingState.startTime) {
+      // 初期経過時間を設定
+      const nowMs = Date.now();
+      const initialElapsedMs = nowMs - workingState.startTime;
+      setElapsedTime(Math.floor(initialElapsedMs / 1000));
+
+      // 1秒ごとに経過時間を更新
+      timerId = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    }
+
+    // クリーンアップ関数
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+      }
+    };
+  }, [workingState.isWorking, workingState.startTime]);
+
+  // 稼働状態が変更されたらローカルストレージに保存
+  useEffect(() => {
+    localStorage.setItem('workingState', JSON.stringify(workingState));
+  }, [workingState]);
+
+  // // 経過時間を時:分:秒の形式に変換
+  // const formatElapsedTime = (seconds: number): string => {
+  //   const hours = Math.floor(seconds / 3600);
+  //   const minutes = Math.floor((seconds % 3600) / 60);
+  //   const secs = seconds % 60;
+
+  //   return [
+  //     hours.toString().padStart(2, '0'),
+  //     minutes.toString().padStart(2, '0'),
+  //     secs.toString().padStart(2, '0')
+  //   ].join(':');
+  // };
 
   // ダッシュボードデータを取得する関数
   const fetchDashboardData = async () => {
@@ -68,26 +185,36 @@ export default function UserHomePage() {
     try {
       // api.tsxのfetchAPI関数を使用
       const data = await fetchAPI('/api/v1/dashboard');
-
       setDashboardData(data);
 
       // 本日の稼働記録をチェックして稼働中かどうかを判定
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD形式
       const todayHours = data.working_hours.daily_hours[today] || 0;
 
-      // 本日の稼働時間記録があり、まだ稼働中（end_timeがない）の記録を取得
-      if (todayHours > 0) {
-        // 本日の稼働記録を取得
-        const todayWorkHours = await fetchAPI('/api/v1/work_hours?start_date=' + today + '&end_date=' + today);
+      // すでに稼働中状態でない場合のみ実行
+      if (!workingState.isWorking) {
+        // 本日の稼働時間記録があり、まだ稼働中（end_timeがない）の記録を取得
+        if (todayHours > 0) {
+          // 本日の稼働記録を取得
+          const todayWorkHours = await fetchAPI(`/api/v1/work_hours?start_date=${today}&end_date=${today}`);
 
-        // 稼働中のレコードがあるか確認（end_timeが空のレコードを探す）
-        const activeWorkHour = todayWorkHours.find((wh: any) =>
-          !wh.end_time || wh.end_time === '' || wh.end_time === null
-        );
+          // 稼働中のレコードがあるか確認（end_timeが空のレコードを探す）
+          const activeWorkHour = todayWorkHours.find((wh: any) =>
+            !wh.end_time || wh.end_time === '' || wh.end_time === null
+          );
 
-        if (activeWorkHour) {
-          setIsWorking(true);
-          setCurrentWorkHour(activeWorkHour.id);
+          if (activeWorkHour) {
+            // 稼働開始時刻をUNIXタイムスタンプ（ミリ秒）に変換
+            const startDate = new Date(today);
+            const [hours, minutes] = activeWorkHour.start_time.split(':').map(Number);
+            startDate.setHours(hours, minutes, 0, 0);
+
+            setWorkingState({
+              isWorking: true,
+              startTime: startDate.getTime(),
+              workHourId: activeWorkHour.id
+            });
+          }
         }
       }
 
@@ -104,6 +231,10 @@ export default function UserHomePage() {
   // コンポーネントマウント時にデータを取得
   useEffect(() => {
     fetchDashboardData();
+    // 10分ごとにダッシュボードデータを更新
+    const intervalId = setInterval(fetchDashboardData, 600000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // 稼働開始/終了ボタンのクリックイベントハンドラ
@@ -114,12 +245,19 @@ export default function UserHomePage() {
         throw new Error('認証情報が見つかりません');
       }
 
-      if (isWorking && currentWorkHour) {
+      if (workingState.isWorking && workingState.workHourId) {
         // 稼働終了処理
         const now = new Date();
         const endTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MMフォーマット
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/work_hours/${currentWorkHour}`, {
+        // 経過時間（時間単位）- 小数点以下2桁まで
+        let hoursWorked = 0;
+        if (workingState.startTime) {
+          const elapsedMs = Date.now() - workingState.startTime;
+          hoursWorked = parseFloat((elapsedMs / (1000 * 60 * 60)).toFixed(2));
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/work_hours/${workingState.workHourId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -128,7 +266,7 @@ export default function UserHomePage() {
           body: JSON.stringify({
             work_hour: {
               end_time: endTime,
-              // 稼働時間は自動計算されるのでここでは設定しない
+              hours_worked: hoursWorked, // 実際の稼働時間を設定
               activity_description: '稼働完了'
             }
           })
@@ -140,14 +278,18 @@ export default function UserHomePage() {
         }
 
         window.alert('稼働を終了しました');
-        setIsWorking(false);
-        setCurrentWorkHour(null);
+        setWorkingState({
+          isWorking: false,
+          startTime: null,
+          workHourId: null
+        });
+        setElapsedTime(0);
 
       } else {
         const now = new Date();
         const startTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MMフォーマット
 
-        // end_timeに仮の値を設定（バックエンドでのバリデーション対応）
+        // NOT NULL制約があるため、仮の終了時間を設定
         const tempEndTime = new Date(now.getTime() + 60000).toTimeString().split(' ')[0].substring(0, 5);
 
         const response = await fetch(`${API_BASE_URL}/api/v1/work_hours`, {
@@ -160,7 +302,7 @@ export default function UserHomePage() {
             work_hour: {
               work_date: now.toISOString().split('T')[0],
               start_time: startTime,
-              end_time: tempEndTime, // 仮の終了時間
+              end_time: tempEndTime, // 仮の終了時間（NULL制約対応）
               hours_worked: 0.01, // 最小値を設定
               activity_description: '稼働開始'
               // task_idは指定しない
@@ -176,9 +318,26 @@ export default function UserHomePage() {
         // 作成された稼働レコードを取得
         const createdWorkHour = await response.json();
 
+        // 現在の正確なタイムスタンプを取得（ミリ秒単位）
+        const currentTimeMs = Date.now();
+
+        // 明示的に現在の時刻を設定
+        const newWorkingState = {
+          isWorking: true,
+          startTime: currentTimeMs, // 必ず値を設定
+          workHourId: createdWorkHour.id
+        };
+
+        console.log('新しい稼働状態:', newWorkingState);
+
+        // 状態を更新
+        setWorkingState(newWorkingState);
+
+        // localStorage への保存も明示的に行う（念のため）
+        localStorage.setItem('workingState', JSON.stringify(newWorkingState));
+
         window.alert('稼働を開始しました');
-        setIsWorking(true);
-        setCurrentWorkHour(createdWorkHour.id);
+        setElapsedTime(0);
       }
 
       // ダッシュボードデータを再取得
@@ -288,18 +447,24 @@ export default function UserHomePage() {
           </div>
 
           {/* 稼働開始/終了ボタン */}
-          <div className='flex justify-center mt-25'>
+          <div className='flex flex-col items-center mt-8'>
+            <WorkingTimer
+              isWorking={workingState.isWorking}
+              startTime={workingState.startTime}
+            />
+
             <button
               className={`w-80 h-80 ${
-                isWorking
+                workingState.isWorking
                   ? 'bg-red-500 hover:bg-red-600'
                   : 'bg-purple-500 hover:bg-purple-600'
               } text-white text-4xl font-bold rounded-full transition duration-200 cursor-pointer`}
               onClick={handleWorkToggle}
             >
-              {isWorking ? '稼働終了' : '稼働開始'}
+              {workingState.isWorking ? '稼働終了' : '稼働開始'}
             </button>
           </div>
+
         </div>
       </div>
     </>

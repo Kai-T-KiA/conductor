@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_03_21_162003) do
+ActiveRecord::Schema[7.1].define(version: 2025_03_22_095826) do
   create_schema "auth"
   create_schema "extensions"
   create_schema "graphql"
@@ -136,7 +136,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_03_21_162003) do
     t.bigint "task_id"
     t.date "work_date", null: false
     t.time "start_time", null: false
-    t.time "end_time", null: false
+    t.time "end_time"
     t.decimal "hours_worked", precision: 5, scale: 2, null: false
     t.text "activity_description"
     t.datetime "created_at", null: false
