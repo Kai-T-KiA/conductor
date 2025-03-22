@@ -152,16 +152,23 @@ module Api
       end
 
       # POST /api/v1/work_hours
-      # 新規稼働時間を記録
+      # 新規稼働時間を記録（稼働開始）
       def create
         # デバッグログ
         Rails.logger.debug "Work Hour Params: #{params.inspect}"
+
         # パラメータから稼働時間オブジェクトを生成
         @work_hour = WorkHour.new(work_hour_params)
 
         # 一般ユーザーの場合、自分のIDを自動設定（管理者でない場合のみ）
         # これにより自分以外の稼働時間を登録できないようにする
         @work_hour.user_id = current_user.id unless current_user.admin?
+
+        # 稼働開始時は終了時間と稼働時間をnilに設定
+        if params[:work_hour][:end_time].nil?
+          @work_hour.end_time = nil
+          @work_hour.hours_worked = 0  # 後で更新されるので初期値
+        end
 
         # デバッグログ
         Rails.logger.debug "New Work Hour: #{@work_hour.attributes.inspect}"
@@ -184,7 +191,7 @@ module Api
       end
 
       # PUT /api/v1/work_hours/:id
-      # 稼働時間情報を更新
+      # 稼働時間情報を更新（稼働終了など）
       def update
         # 自分の稼働時間または管理者の場合のみ更新可能とする権限チェック
         if @work_hour.user_id == current_user.id || current_user.admin?
@@ -194,6 +201,20 @@ module Api
               error: '不正な操作です',
               details: '他のユーザーの稼働時間を変更することはできません'
             }, status: :forbidden
+          end
+
+          # 稼働終了の場合（end_timeがパラメータにある場合）
+          if work_hour_params[:end_time].present? && @work_hour.end_time.nil?
+            # フロントエンドから送信された稼働時間を使用するか、
+            # バックエンドで計算するか決定
+            # 両方ある場合はフロントエンドの値を優先
+            unless work_hour_params[:hours_worked].present?
+              # startとendの時間から計算
+              start_time = @work_hour.start_time
+              end_time = Time.parse(work_hour_params[:end_time])
+              hours = ((end_time - start_time) / 3600.0).round(2)
+              params[:work_hour][:hours_worked] = hours
+            end
           end
 
           # 稼働時間情報の更新を試みる

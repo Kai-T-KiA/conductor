@@ -3,7 +3,9 @@ module Api
     class BaseController < ApplicationController
       # API V1の共通処理を実装
       # before_action :authenticate_user!, except: [:index, :show]
-      before_action :authenticate_user!, except: [:show]
+      # before_action :authenticate_user!, except: [:show]
+      # APIのJWT認証設定
+      before_action :authenticate_user!
 
       # API例外ハンドリング
       rescue_from ActiveRecord::RecordNotFound, with: :record_not_found

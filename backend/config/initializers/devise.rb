@@ -1,4 +1,7 @@
 Devise.setup do |config|
+  # API用の設定
+  config.navigational_formats = [:json]
+
   # アプリケーションからのメール送信に使うデフォルトの送信元アドレス
   # パスワードリセットや確認メールなどの送信元になります
   config.mailer_sender = 'please-change-me-at-config-initializers-devise@example.com'

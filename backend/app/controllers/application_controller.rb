@@ -1,4 +1,8 @@
 class ApplicationController < ActionController::API
+  # セッションをスキップする場合もあるが、有効化
+  include ActionController::Cookies
+  include ActionController::RequestForgeryProtection
+
   # MimeRespondsモジュールを含めることで、respond_toメソッドが使えるようになる
   # これによりAPIコントローラでもフォーマット対応（JSON/XMLなど）が可能になる
   include ActionController::MimeResponds
