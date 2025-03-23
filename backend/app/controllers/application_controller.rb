@@ -7,6 +7,8 @@ class ApplicationController < ActionController::API
   # これによりAPIコントローラでもフォーマット対応（JSON/XMLなど）が可能になる
   include ActionController::MimeResponds
 
+  include ActionController::Flash
+
   # デフォルトでJSONレスポンスを返すように設定
   respond_to :json
 

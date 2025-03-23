@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, validateAuth } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
+// import { getCurrentUser, validateAuth } from '../../utils/api';
 
 // レイアウトコンポーネントのベース機能
 // UserLayoutとAdminLayoutの共通機能を抽出
@@ -18,88 +19,82 @@ export function withAuthLayout(
     children: React.ReactNode;
   }) {
     const router = useRouter();
-    const [userData, setUserData] = useState({
-      id: '000000',
-      name: '田中太郎'
-    });
+    const { token, userData, isAuthenticated, refreshToken } = useAuth();
     const [loading, setLoading] = useState(true);
+    const [authChecked, setAuthChecked] = useState(false);
+    const [displayUserData, setDisplayUserData] = useState({
+      id: '000000',
+      name: '読み込み中...'
+    });
 
     useEffect(() => {
       const checkAuth = async () => {
         try {
-          // トークンがあるか確認
-          const token = localStorage.getItem('token');
-          if (!token) {
-            // トークンがない場合はログイン画面にリダイレクト
-            router.push('/login');
-            return;
+          // ログインしていない場合はリダイレクト
+          if (!isAuthenticated) {
+            // トークンのリフレッシュを試みる
+            const refreshSuccess = await refreshToken();
+
+            if (!refreshSuccess) {
+              console.log('Not authenticated, redirecting to login');
+              router.replace('/login');
+              return;
+            }
           }
 
-          // トークンの有効性を検証
-          const isValid = await validateAuth();
-          if (!isValid) {
-            // 認証が無効な場合はログイン画面にリダイレクト
-            router.push('/login');
-            return;
-          }
-
-          // 現在のユーザータイプを取得
-          const userType = localStorage.getItem('user_type');
+          // ユーザータイプに基づいたリダイレクト
+          const userType = userData?.user_type ? Number(userData.user_type) : null;
+          console.log('User type from context:', userType);
 
           // 管理者ページに一般ユーザーがアクセスしようとしている場合
           if (
             window.location.pathname.startsWith('/admin') &&
-            userType !== '1'
+            userType !== 1
           ) {
-            router.push('/user/home');
+            console.log('Non-admin accessing admin page, redirecting');
+            router.replace('/user/home');
             return;
           }
 
           // 一般ユーザーページに管理者がアクセスしようとしている場合
           if (
             window.location.pathname.startsWith('/user') &&
-            userType === '1'
+            userType === 1
           ) {
-            router.push('/admin/home');
+            console.log('Admin accessing user page, redirecting');
+            router.replace('/admin/home');
             return;
           }
 
-          // ユーザー情報を取得
-          try {
-            // const user = await getCurrentUser();
-            // // if (user && user.data) {
-            //   setUserData({
-            //     id: user.data.id || '000000',
-            //     name: user.data.name || '田中太郎',
-            //   });
-            // }
-            setUserData({
-              id: '000000',
-              name: '田中太郎',
-            });
-          } catch (error) {
-            console.error('Failed to fetch user data:', error);
-            // エラー時も処理を続行（デフォルト値を使用）
-            setUserData({
-              id: '000000',
-              name: '田中太郎',
+          // 表示用ユーザーデータの設定
+          if (userData) {
+            setDisplayUserData({
+              id: userData.id || '000000',
+              name: userData.name || 'ユーザー',
             });
           }
         } catch (error) {
           console.error('Auth check failed:', error);
-          router.push('/login');
+          router.replace('/login');
         } finally {
           setLoading(false);
         }
       };
 
       checkAuth();
-    }, [router]);
+    }, [isAuthenticated, userData, router, refreshToken]);
+
+    // 認証状態やトークンが変わったときにチェックを再実行
+    useEffect(() => {
+      if (!loading) {
+        setLoading(true);
+      }
+    }, [token, isAuthenticated]);
 
     if (loading) {
       return <div className='flex justify-center items-center h-screen'>読み込み中...</div>;
     }
 
-    return <LayoutComponent userData={userData}>{children}</LayoutComponent>;
+    return <LayoutComponent userData={displayUserData}>{children}</LayoutComponent>;
   };
 }
