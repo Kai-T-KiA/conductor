@@ -1,4 +1,4 @@
-<p align="center"><a href="" target="_blank"><img src="/public/conductor-logo.png" width="400" alt="Conductor logo"></a></p>
+<p align="center"><a href="" target="_blank"><img src="frontend/public/conductor-logo.png" width="400" alt="Conductor logo"></a></p>
 
 # [Conductor](https://conductor-rho.vercel.app/)
 
@@ -15,7 +15,7 @@
 - TailwindCSS
 
 ### バックエンド
-- Ruby on Rails7
+- Ruby on Rails7（APIモードでの使用）
 - Supabase
 - Redis
 
