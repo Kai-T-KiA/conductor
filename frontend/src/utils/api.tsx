@@ -24,16 +24,6 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}, toke
     ...(options.headers as Record<string, string> || {})
   };
 
-  // 認証トークンがあれば追加
-  // if (typeof window !== 'undefined') {
-  //   const token = localStorage.getItem('token');
-  //   console.log('Token exists:', Boolean(token));
-  //   if (token) {
-  //     console.log('Token prefix:', token ? token.substring(0, 10) + '...' : 'none');
-  //     headers['Authorization'] = `Bearer ${token}`;
-  //   }
-  // }
-
   // トークンがあれば追加
   console.log('Token from context exists:', Boolean(token));
   if (token) {
@@ -76,40 +66,6 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}, toke
     throw error;
   }
 }
-
-// /**
-//  * ログイン処理
-//  * @param email - ユーザーメールアドレス
-//  * @param password - ユーザーパスワード
-//  */
-// export async function login(email: string, password: string) {
-//   // デバッグログ
-//   console.log('Attempting login with:', { email });
-//   console.log('API URL:', `${API_BASE_URL}/api/v1/login`);
-//   console.log('ENV_API_URL:', `${process.env.NEXT_PUBLIC_API_URL}`)
-
-//   return fetchAPI('/api/v1/login', {
-//     method: 'POST',
-//     body: JSON.stringify({
-//       user: { email, password }
-//     }),
-//   });
-// }
-
-// /**
-//  * ログアウト処理
-//  */
-// export async function logout() {
-//   return fetchAPI('/api/v1/logout', {
-//     method: 'DELETE',
-//   }).then(() => {
-//     // ローカルストレージからトークンを削除
-//     if (typeof window !== 'undefined') {
-//       localStorage.removeItem('token');
-//       localStorage.removeItem('user_type');
-//     }
-//   });
-// }
 
 /**
  * 現在のユーザー情報を取得

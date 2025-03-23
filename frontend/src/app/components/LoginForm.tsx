@@ -6,7 +6,7 @@ import Image from 'next/image';
 // import { login } from '../../utils/api';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { createApiClient } from '../../utils/apiClient';
+// import { createApiClient } from '../../utils/apiClient';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
