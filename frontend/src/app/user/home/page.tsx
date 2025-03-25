@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useWorking } from '../../../contexts/WorkingContext';
-import { createApiClient } from '../../../utils/apiClient';
+import { useApiClient } from '../../../utils/apiClient';
 
 
 import Link from 'next/link';
@@ -68,15 +68,26 @@ export default function UserHomePage() {
   const auth = useAuth();
   const { token } = useAuth(); // AuthContextからトークンを取得
   const { workingState, elapsedTime, startWorking, stopWorking } = useWorking();
-  const apiClient = createApiClient();
+  const apiClient = useApiClient();
 
   // ダッシュボードデータの状態
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // データフェッチ状態の追跡
+  const fetchingRef = useRef(false); // リクエスト中かどうかを追跡するref
+  const [dataFetched, setDataFetched] = useState(false);
+
   // ダッシュボードデータを取得する関数
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
+    // すでにフェッチ中なら何もしない
+    if (fetchingRef.current) {
+      console.log('Already fetching data, skipping...');
+      return;
+    }
+
+    // トークンチェック
     if (!token) {
       console.error('No token available');
       setError('認証情報が見つかりません。再度ログインしてください。');
@@ -84,12 +95,16 @@ export default function UserHomePage() {
       return;
     }
 
+    // フェッチ中フラグをセット
+    fetchingRef.current = true;
+    console.log('Fetching dashboard data...'); // デバッグログ
+
     setIsLoading(true);
     try {
       // api.tsxのfetchAPI関数を使用
       const data = await fetchAPI('/api/v1/dashboard', {}, token);
+      console.log('Dashboard data received, timestamp:', new Date().toISOString()); // タイムスタンプを追加
       setDashboardData(data);
-
       setError(null);
     } catch (err) {
       console.error('API error details:', err);
@@ -97,18 +112,48 @@ export default function UserHomePage() {
       setError(err instanceof Error ? `${err.message} (${err.name})` : JSON.stringify(err));
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false; // フェッチ完了フラグをリセット
     }
-  };
+  }, [token]); // tokenに依存させる
 
-  // コンポーネントマウント時にデータを取得
   useEffect(() => {
-    if (auth.isAuthenticated) {
-      fetchDashboardData();
-      // 10分ごとにダッシュボードデータを更新
-      const intervalId = setInterval(fetchDashboardData, 600000);
-      return () => clearInterval(intervalId);
-    }
-  }, [auth.isAuthenticated]);
+    // この変数でコンポーネントがマウントされたときに1回だけ実行されるようにする
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (auth.isAuthenticated && isMounted && !dataFetched) {
+        console.log('Initial dashboard data fetch');
+        await fetchDashboardData();
+        if (isMounted) {
+          setDataFetched(true);
+        }
+      }
+    };
+
+    loadData();
+
+    // クリーンアップ関数
+    return () => {
+      isMounted = false;
+    };
+  }, [auth.isAuthenticated, dataFetched, fetchDashboardData]);
+
+  // 定期的な更新設定
+  useEffect(() => {
+    if (!auth.isAuthenticated || !dataFetched) return;
+
+    console.log('Setting up dashboard refresh interval');
+    const intervalId = setInterval(() => {
+      // すでにフェッチ中でなければ実行
+      if (!fetchingRef.current) {
+        console.log('Interval refresh triggered');
+        fetchDashboardData();
+      }
+    }, 600000); // 10分ごと
+
+    // クリーンアップ関数
+    return () => clearInterval(intervalId);
+  }, [auth.isAuthenticated, dataFetched, fetchDashboardData]);
 
   // 稼働開始/終了ボタンのクリックイベントハンドラ
   const handleWorkToggle = async () => {
@@ -174,6 +219,8 @@ export default function UserHomePage() {
     uncompleted: userTasksStatus?.not_started || 0  // not_startedをuncompletedとして扱う
   };
 
+  // 合計タスク数を計算
+  const totalTasks = Object.values(taskStatusNumber).reduce((sum, count) => sum + count, 0);
 
   return (
     <>
@@ -215,7 +262,7 @@ export default function UserHomePage() {
                 <div className='text-xs'>完了</div>
               </div>
               <div className='text-center'>
-                <div className='text-xl font-bold'>4</div>
+                <div className='text-xl font-bold'>{totalTasks}</div>
                 <div className='text-xs'>合計</div>
               </div>
             </div>

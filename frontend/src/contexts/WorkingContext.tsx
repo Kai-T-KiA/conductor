@@ -2,8 +2,8 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-// import { secureStorage } from '../utils/secureStorage';
-import { createApiClient } from '../utils/apiClient';
+// import { createSecureStorage } from '../utils/secureStorage';
+import { useApiClient } from '../utils/apiClient';
 
 interface WorkingState {
   isWorking: boolean;
@@ -22,7 +22,7 @@ const WorkingContext = createContext<WorkingContextType | undefined>(undefined);
 
 export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const auth = useAuth();
-  const apiClient = createApiClient();
+  const apiClient = useApiClient();
 
   const [workingState, setWorkingState] = useState<WorkingState>({
     isWorking: false,
@@ -36,7 +36,8 @@ export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) =
   useEffect(() => {
     if (auth.isAuthenticated && auth.userData?.id && auth.secureStorage) {
       try {
-        const savedState = auth.secureStorage.getItem('workingState');
+        const savedState = auth.secureStorage.get<WorkingState>('workingState');
+
 
         if (savedState &&
             typeof savedState === 'object' &&
@@ -44,13 +45,21 @@ export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) =
             'startTime' in savedState &&
             'workHourId' in savedState) {
 
-          // 稼働中の状態が保存されている場合
-          if (savedState.isWorking && savedState.startTime) {
-            setWorkingState(savedState);
+          const validState: WorkingState = {
+            // 各プロパティを明示的に型変換
+            isWorking: Boolean(savedState.isWorking),
+            startTime: typeof savedState.startTime === 'number' ? savedState.startTime : null,
+            workHourId: typeof savedState.workHourId === 'number' ? savedState.workHourId : null
+          };
 
-            // 経過時間を計算
+          // 稼働中の状態が保存されている場合
+          if (validState.isWorking && validState.startTime) {
+            setWorkingState(validState);
+
+            // 経過時間を計算（型チェック追加）
             const nowMs = Date.now();
-            const elapsedMs = nowMs - savedState.startTime;
+            const elapsedMs = nowMs - validState.startTime;
+            // number型である事を確認
             setElapsedTime(Math.floor(elapsedMs / 1000));
           }
         }
@@ -79,7 +88,7 @@ export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) =
   // 稼働状態が変更されたらsecureStorageに保存
   useEffect(() => {
     if (auth.isAuthenticated && auth.userData?.id && auth.secureStorage) {
-      auth.secureStorage.setItem('workingState', workingState);
+      auth.secureStorage.set('workingState', workingState);
     }
   }, [workingState, auth.isAuthenticated, auth.userData, auth.secureStorage]);
 
@@ -121,7 +130,7 @@ export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) =
 
       // secureStorageに保存
       if (auth.secureStorage) {
-        auth.secureStorage.setItem('workingState', newWorkingState);
+        auth.secureStorage.set('workingState', newWorkingState);
       }
     } catch (error) {
       console.error('稼働開始エラー:', error);
@@ -174,7 +183,7 @@ export const WorkingProvider: React.FC<{children: ReactNode}> = ({ children }) =
 
       // secureStorageからも削除
       if (auth.secureStorage) {
-        auth.secureStorage.setItem('workingState', resetState);
+        auth.secureStorage.set('workingState', resetState);
       }
     } catch (error) {
       console.error('稼働終了エラー:', error);

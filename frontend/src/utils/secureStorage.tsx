@@ -13,7 +13,7 @@ export const createSecureStorage = (userId: string) => {
 
   return {
     // 暗号化して保存
-    setItem: (key: string, value: any): void => {
+    set: (key: string, value: any): void => {
       try {
         const valueStr = JSON.stringify(value);
         const encrypted = CryptoJS.AES.encrypt(valueStr, SECRET_KEY).toString();
@@ -24,7 +24,7 @@ export const createSecureStorage = (userId: string) => {
     },
 
     // 復号化して取得
-    getItem: (key: string): any => {
+    get: (key: string): any => {
       try {
         const encrypted = sessionStorage.getItem(key);
         if (!encrypted) return null;

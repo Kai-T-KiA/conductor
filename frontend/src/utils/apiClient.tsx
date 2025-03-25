@@ -3,7 +3,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../utils/api';
 
-export const createApiClient = () => {
+// 関数名を useApiClient に変更してカスタムフックとする
+export const useApiClient = () => {
+  // useAuth は React フックなので、useで始まるカスタムフック内で呼び出す
   const auth = useAuth();
 
   const apiClient = async (endpoint: string, options: RequestInit = {}) => {

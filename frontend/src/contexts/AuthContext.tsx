@@ -66,7 +66,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           const data = await response.json();
           console.log('Verify response data:', data);
           setToken(data.token);
-          setUserData(data.user);
+          // ユーザーデータの構造を修正（role を user_type として設定）
+          const userInfo = {
+            id: data.user?.id?.toString() || '0',
+            name: data.user?.name || data.user?.email?.split('@')[0] || 'User',
+            email: data.user?.email,
+            user_type: data.user?.role // role を user_type として使用
+          };
+
+          console.log('Setting userData to:', userInfo);
+          setUserData(userInfo);
         } else {
           console.error('Auth verification failed with status:', response.status);
           const errorData = await response.json().catch(() => ({}));
@@ -114,7 +123,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       id: data.data.user_id?.toString() || '0',
       name: data.data.user_email?.split('@')[0] || 'User',
       email: data.data.user_email,
-      user_type: Number(data.data.user_type) // 確実に数値に変換
+      user_type: data.data.role || Number(data.data.user_type) // role を優先的に使用
     };
 
     console.log('Setting userData to:', userInfo);
