@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { getCurrentUser } from '../../utils/api';
 
 type HeaderProps = {
   userId: string;
@@ -13,6 +14,30 @@ export default function Header({ userId }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState([]);
+  const [error, setError] = useState(null);  // 使わないかも
+
+  // // APIで情報を取得
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const [currentUserResponse] = await Promise.all([
+  //         // if (localStorage.getItem('email') !== null) {
+  //           getCurrentUser()
+  //         // }
+  //       ]);
+
+  //       setCurrentUser(currentUserResponse);
+  //     } catch (error) {
+  //       console.error('ユーザー情報の取得に失敗しました。');
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
+
+  // console.log('API取得結果');
+  // console.log(currentUser);
 
   // メニュー外クリックで閉じる処理
   useEffect(() => {

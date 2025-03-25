@@ -3,16 +3,19 @@
  * 環境に応じてURLが自動的に切り替わる
  */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// デバッグ用に出力
+console.log('API_BASE_URL:', API_BASE_URL);
 
 /**
  * 共通のAPIリクエスト関数
  * @param endpoint - APIエンドポイント（先頭のスラッシュは含める）
  * @param options - fetchオプション
+ * @param token - 認証トークン（AuthContextから取得）
  */
-export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+export async function fetchAPI(endpoint: string, options: RequestInit = {}, token: string | null = null) {
   // URLの構築
   const url = `${API_BASE_URL}${endpoint}`;
-  // console.log(`Making request to: ${url}`);
+  console.log(`Making request to: ${url}`);
 
   // ヘッダーを明示的な型で定義
   const headers: Record<string, string> = {
@@ -21,26 +24,21 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string> || {})
   };
 
-  // 認証トークンがあれば追加
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    console.log('Token exists:', Boolean(token));
-    if (token) {
-      console.log('Token prefix:', token ? token.substring(0, 10) + '...' : 'none');
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+  // トークンがあれば追加
+  console.log('Token from context exists:', Boolean(token));
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-
-  // リクエストヘッダーの確認
-  console.log('Request headers:', headers);
 
   // リクエスト設定(特定の値のみを許可するRequestCredentials型を設定)
   const config:RequestInit = {
     ...options,
-    // クロスオリジンリクエスト（異なるドメイン間のリクエスト）でCookieなどの認証情報を送信するかどうかを指定するオプション
-    // credentials: 'include',
+    credentials: 'include', // HTTPOnly Cookieを送信可能に
     headers,
   };
+
+  // リクエストヘッダーの確認
+  console.log('Request headers:', headers);
 
   // APIリクエスト実行
   try {
@@ -67,40 +65,6 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     console.error('API request failed:', error);
     throw error;
   }
-}
-
-/**
- * ログイン処理
- * @param email - ユーザーメールアドレス
- * @param password - ユーザーパスワード
- */
-export async function login(email: string, password: string) {
-  // デバッグログ
-  console.log('Attempting login with:', { email });
-  console.log('API URL:', `${API_BASE_URL}/api/v1/login`);
-  console.log('ENV_API_URL:', `${process.env.NEXT_PUBLIC_API_URL}`)
-
-  return fetchAPI('/api/v1/login', {
-    method: 'POST',
-    body: JSON.stringify({
-      user: { email, password }
-    }),
-  });
-}
-
-/**
- * ログアウト処理
- */
-export async function logout() {
-  return fetchAPI('/api/v1/logout', {
-    method: 'DELETE',
-  }).then(() => {
-    // ローカルストレージからトークンを削除
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user_type');
-    }
-  });
 }
 
 /**
