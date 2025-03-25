@@ -3,10 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-// import { login } from '../../utils/api';
-
-import { useAuth } from '../../contexts/AuthContext';
-// import { createApiClient } from '../../utils/apiClient';
+import { login } from '../../utils/api';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -14,10 +11,8 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
   const [devMessage, setDevMessage] = useState('');
   const router = useRouter();
-  const auth = useAuth();
 
   // APIと連携したログイン機能の実装
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,28 +21,30 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      // AuthContextのlogin関数を直接使用
-      const loginResponse = await auth.login(email, password);
-      console.log('Login successful, response:', loginResponse);
-      console.log('Current auth.userData:', auth.userData);
+      // パスワードの基本バリデーション
+      if (!password || password.length < 6) {
+        throw new Error('パスワードは6文字以上で入力してください');
+      }
+
+      // 集約されたAPI関数を使用してログイン
+      const data = await login(email, password);
+
+      // 認証成功時の処理
+      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('user_type', data.data.user_type);
 
       // ユーザーにログイン成功を通知
-      setSuccessMessage('ログインしました');
+      setSuccessMessage(data.status.message || 'ログインしました');
 
       // 適切なダッシュボードにリダイレクト
-      // userData更新が非同期の場合があるため、loginResponseからuser_typeを取得
-      const userType = loginResponse.data.user_type;
-      console.log('User type from response:', userType);
-
       setTimeout(() => {
-        if (userType === 1) {
-          console.log('Redirecting to admin dashboard');
+        if (data.data.user_type === 1) {
           router.push('/admin/home');
         } else {
-          console.log('Redirecting to user dashboard');
           router.push('/user/home');
         }
       }, 200);
+
     } catch (error) {
       // エラー処理
       if (error instanceof Error) {

@@ -24,13 +24,13 @@ Rails.application.routes.draw do
         # DELETE /api/v1/logout
         delete 'logout', to: 'sessions#destroy'
 
-        # リフレッシュトークンやその認証のためのエンドポイント
-        post 'auth/refresh', to: 'sessions#refresh'
-        get 'auth/verify', to: 'sessions#verify'
-
         # テスト/開発用のヘルスチェックエンドポイント
         # GET /api/v1/test/health
         get 'test/health', to: 'test#health'
+
+        # メールアドレスでユーザーを取得するカスタムルート
+        # GET /api/v1/user/:email
+        # get ':email', to: 'users#show'
       end
 
       # resourcesを使うとRESTfulルートが作成される
