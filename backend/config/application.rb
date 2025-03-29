@@ -33,16 +33,5 @@ module App
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore
     config.middleware.use Rack::MethodOverride  # 必要に応じて
-
-    # JWTの使用時に必要なCORSヘッダー
-    config.middleware.insert_before 0, Rack::Cors do
-      allow do
-        origins '*'
-        resource '*',
-          headers: :any,
-          methods: [:get, :post, :put, :patch, :delete, :options, :head],
-          expose: ['Authorization']
-      end
-    end
   end
 end
